@@ -300,7 +300,7 @@
         <div id="lbl-usuario" style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px;text-align:center;word-break:break-all;padding:0 4px"></div>
         <button onclick="cerrarSesion()" style="width:100%;padding:10px;background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">Cerrar sesión</button>
       </div>
-      <div class="sidebar-foot">v3.0 — Firebase + GitHub Pages</div>
+      <div class="sidebar-foot">v4.0 — Supabase + GitHub Pages</div>
     </div>
 
     <div class="main">
@@ -308,11 +308,11 @@
       <!-- DASHBOARD -->
       <div class="panel activo" id="panel-dashboard">
         <div class="page-top">
-          <div><h1>Dashboard</h1><p>Actualización en tiempo real · onSnapshot activo</p></div>
+          <div><h1>Dashboard</h1><p>Actualización en tiempo real · Supabase Realtime</p></div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span class="refresh-badge"><span class="refresh-dot"></span>En línea</span>
             <button class="btn btn-p btn-sm" onclick="cargarDashboard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Actualizar</button>
-            <button class="btn btn-gray btn-sm" id="btn-recalcular" onclick="recalcularStats()" title="Recuenta todos los registros y actualiza el resumen en Firebase."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Recalcular datos</button>
+            <button class="btn btn-gray btn-sm" id="btn-recalcular" onclick="recalcularStats()" title="Vuelve a consultar los totales desde Supabase."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Recalcular datos</button>
           </div>
         </div>
         <div class="stats" style="grid-template-columns:repeat(3,1fr)">
@@ -486,9 +486,9 @@
     </div>
     <div class="sep"></div>
     <div class="fg">
-      <label>Boletas entregadas (contador actual)</label>
-      <input type="number" id="m-contador" min="0">
-      <div class="hint">Escribe 0 para resetear el contador a cero</div>
+      <label>Boletas registradas en el sistema</label>
+      <input type="number" id="m-contador" min="0" disabled style="background:#f1f5f9;color:var(--sub)">
+      <div class="hint">Este número se calcula automáticamente a partir de los registros reales — ya no es editable (evita desincronizaciones)</div>
     </div>
     <div class="fmsg" id="msg-modal"></div>
     <div class="modal-btns">
@@ -498,26 +498,15 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, orderBy, query, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, limit, startAfter, where, getCountFromServer, writeBatch, onSnapshot }
-    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+  const SUPABASE_URL = "https://eugqcnqooypgxysoudaz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1Z3FjbnFvb3lwZ3h5c291ZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODE5NTgsImV4cCI6MjEwMDY1Nzk1OH0.VnH8U_Dm29mutMG8D4Eibp9er2bqXcGcvS1ix-cVaiA";
 
-  const cfg = {
-    apiKey:            "AIzaSyD75kntcW_TqAJznShE50ACAgvgjp1DlQc",
-    authDomain:        "semana-comercial.firebaseapp.com",
-    projectId:         "semana-comercial",
-    storageBucket:     "semana-comercial.firebasestorage.app",
-    messagingSenderId: "52687643666",
-    appId:             "1:52687643666:web:48e7106b88b2f2c2b364cb"
-  };
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const app  = initializeApp(cfg);
-  const db   = getFirestore(app);
-  const auth = getAuth(app);
-  const BASE = "https://sistemacca.github.io/boletas-camara/?empresa=";
+  // BASE del enlace público de registro (ajusta si tu repo/carpeta de GitHub Pages es distinta)
+  const BASE = "https://sistemacca.github.io/semana-comercial-arauca/?empresa=";
 
   const capitalize = str => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
   const esc = s => String(s == null ? "" : s)
@@ -526,28 +515,26 @@
   const authTxt   = v => v === true ? "Sí" : v === false ? "No" : "—";
   const authColor = v => v === true ? "var(--verde)" : v === false ? "var(--rojo)" : "var(--sub)";
 
-  let regs = [], emps = [], conts = {}, autoTimer = null, inactividadTimer = null;
+  let regs = [], emps = [], conts = {}, inactividadTimer = null;
   let dashPagActual = 1;
-  let regsCache = [], paginaActual = 1;
+  let regsCache = [], regsTotal = 0, paginaActual = 1;
   const POR_PAGINA = 50;
   const INACTIVIDAD_MS = 15 * 60 * 1000;
   let empsMap = {};
 
-  let _unsubEmps  = null, _unsubConts = null, _unsubStats = null;
-  let _cacheEmps  = null, _cacheConts = null, _cacheStats = null;
+  let _channel = null;
   let _cacheListo = false;
   let _exportacionesRealizadas = 0;
   const MAX_EXPORTS_SIN_FILTRO = 1;
 
-  const PAGE_SIZE     = 200;
-  let regCursors      = [null];
-  let regBloqueActual = 0;
-  let regFiltroEmp    = "";
-  let regFiltroBusq   = "";
-  let regCargando     = false;
-
-  Object.defineProperty(window, "regBloqueActual", { get: () => regBloqueActual });
-  Object.defineProperty(window, "PAGE_SIZE",       { get: () => PAGE_SIZE });
+  // La navegación por "bloques" de Firestore ya no es necesaria: Supabase pagina
+  // directamente en la base de datos con .range(), así que estos quedan como
+  // referencias vacías solo para no romper los botones del HTML.
+  let regFiltroEmp  = "";
+  let regFiltroBusq = "";
+  let regCargando   = false;
+  window.regBloqueActual = 0;
+  window.cargarBloque = () => {};
 
   function resetInactividad() {
     clearTimeout(inactividadTimer);
@@ -568,14 +555,13 @@
   window.addEventListener("offline", () => setOffline(true));
 
   let _lastRender = 0;
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && auth.currentUser) {
+  document.addEventListener("visibilitychange", async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!document.hidden && session) {
       const ahora = Date.now();
-      if (ahora - _lastRender > 60000) { _lastRender = ahora; if (_cacheListo) renderDashboard(); }
+      if (ahora - _lastRender > 60000) { _lastRender = ahora; fetchDashboardData(); }
     }
   });
-
-  const fstr = f => !f ? "" : f.toDate ? f.toDate().toISOString() : f.toString();
 
   function genCodigo() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -583,8 +569,8 @@
     for (let i = 0; i < 8; i++) c += chars[Math.floor(Math.random() * chars.length)];
     return c;
   }
-  async function genCodigoUnico(snapDocs) {
-    const usados = new Set(snapDocs.map(d => d.id));
+  function genCodigoUnico(codigosUsados) {
+    const usados = new Set(codigosUsados);
     let codigo;
     do { codigo = genCodigo(); } while (usados.has(codigo));
     return codigo;
@@ -593,16 +579,17 @@
   let loginBloqueado = false, loginIntentos = 0;
   const MAX_INTENTOS = 5, BLOQUEO_MS = 30000;
 
-  onAuthStateChanged(auth, user => {
-    if (user) {
+  // ── AUTENTICACIÓN (Supabase Auth) ──────────────────────────────────────────
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) {
       document.getElementById("login").style.display = "none";
       document.getElementById("app").style.display   = "block";
-      document.getElementById("lbl-usuario").textContent = user.email;
+      document.getElementById("lbl-usuario").textContent = session.user.email;
       iniciarListeners();
       resetInactividad();
     } else {
       detenerListeners();
-      clearInterval(autoTimer); clearTimeout(inactividadTimer); autoTimer = null;
+      clearTimeout(inactividadTimer);
       document.getElementById("app").style.display   = "none";
       document.getElementById("login").style.display = "flex";
     }
@@ -616,10 +603,10 @@
     const btn   = document.getElementById("btn-login");
     if (!email || !pass) { errEl.textContent = "Completa email y contraseña"; return; }
     btn.disabled = true; btn.textContent = "Verificando…"; errEl.textContent = "";
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (!error) {
       loginIntentos = 0;
-    } catch (e) {
+    } else {
       loginIntentos++;
       if (loginIntentos >= MAX_INTENTOS) {
         loginBloqueado = true;
@@ -635,9 +622,9 @@
   };
 
   window.cerrarSesion = async () => {
-    detenerListeners(); clearInterval(autoTimer); clearTimeout(inactividadTimer);
-    autoTimer = null; _exportacionesRealizadas = 0;
-    await signOut(auth);
+    detenerListeners(); clearTimeout(inactividadTimer);
+    _exportacionesRealizadas = 0;
+    await supabase.auth.signOut();
   };
 
   window.irA = (panel, nombre) => {
@@ -660,39 +647,53 @@
     document.getElementById("overlay").classList.toggle("visible");
   };
 
+  // ── DASHBOARD (Supabase Realtime en vez de onSnapshot) ─────────────────────
+  // En vez de descargar TODOS los registros al navegador (como hacía Firestore
+  // con onSnapshot sobre "contadores"), consultamos solo agregados pequeños:
+  // la tabla "empresas" (pocas filas) y la vista "conteo_por_empresa" (una fila
+  // por empresa con su total), sin importar si hay 40 o 40,000 registros.
+  async function fetchDashboardData() {
+    _lastRender = Date.now();
+    try {
+      const [{ data: empresasData, error: e1 }, { data: conteoData, error: e2 }] = await Promise.all([
+        supabase.from("empresas").select("*"),
+        supabase.from("conteo_por_empresa").select("*")
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+
+      emps = empresasData || [];
+      conts = {};
+      (conteoData || []).forEach(c => { conts[c.empresa_codigo] = c.total; });
+      empsMap = {};
+      emps.forEach(e => { empsMap[e.codigo] = e.nombre || e.codigo; });
+
+      _cacheListo = true;
+      renderDashboard();
+    } catch (e) {
+      console.error(e);
+      document.getElementById("spin-dash").innerHTML = "<p style='color:var(--rojo);padding:20px'>Error al cargar. Reintentando...</p>";
+    }
+  }
+
   function iniciarListeners() {
-    if (_unsubEmps) return;
-    _unsubEmps = onSnapshot(collection(db,"empresas"), snap => {
-      _cacheEmps = snap;
-      if (_cacheConts !== null && _cacheStats !== null) { _cacheListo = true; renderDashboard(); }
-    }, err => console.error("onSnapshot empresas:", err));
-    _unsubConts = onSnapshot(collection(db,"contadores"), snap => {
-      _cacheConts = snap;
-      if (_cacheEmps !== null && _cacheStats !== null) { _cacheListo = true; renderDashboard(); }
-    }, err => console.error("onSnapshot contadores:", err));
-    _unsubStats = onSnapshot(doc(db,"stats","_stats"), snap => {
-      _cacheStats = snap;
-      if (_cacheEmps !== null && _cacheConts !== null) { _cacheListo = true; renderDashboard(); }
-    }, err => console.error("onSnapshot stats:", err));
+    if (_channel) return;
+    _channel = supabase
+      .channel("admin-dashboard")
+      .on("postgres_changes", { event: "*", schema: "public", table: "empresas" },  fetchDashboardData)
+      .on("postgres_changes", { event: "*", schema: "public", table: "registros" }, fetchDashboardData)
+      .subscribe();
+    fetchDashboardData();
   }
 
   function detenerListeners() {
-    if (_unsubEmps)  { _unsubEmps();  _unsubEmps  = null; }
-    if (_unsubConts) { _unsubConts(); _unsubConts = null; }
-    if (_unsubStats) { _unsubStats(); _unsubStats = null; }
-    _cacheEmps = null; _cacheConts = null; _cacheStats = null; _cacheListo = false;
+    if (_channel) { supabase.removeChannel(_channel); _channel = null; }
+    _cacheListo = false;
   }
 
-  async function renderDashboard() {
+  function renderDashboard() {
     if (!_cacheListo) return;
-    _lastRender = Date.now();
     try {
-      emps  = _cacheEmps.docs.map(d => ({ id: d.id, ...d.data() }));
-      conts = {};
-      _cacheConts.docs.forEach(d => { conts[d.id] = d.data().actual || 0; });
-      empsMap = {};
-      emps.forEach(e => { empsMap[e.id] = e.nombre || e.id; });
-
       const totB = Object.values(conts).reduce((a, b) => a + b, 0);
       const totalVendidas = emps.reduce((acc, e) => acc + (Number(e.hasta) - Number(e.desde) + 1), 0);
       document.getElementById("s-emp").textContent      = emps.length;
@@ -700,9 +701,10 @@
       document.getElementById("s-bol").textContent      = totB;
 
       const sorted = [...emps].sort((a, b) => {
-        const tA = a.creadoEn || 0, tB = b.creadoEn || 0;
+        const tA = a.creado_en ? new Date(a.creado_en).getTime() : 0;
+        const tB = b.creado_en ? new Date(b.creado_en).getTime() : 0;
         if (tB !== tA) return tB - tA;
-        return capitalize(a.nombre||a.id).localeCompare(capitalize(b.nombre||b.id));
+        return capitalize(a.nombre||a.codigo).localeCompare(capitalize(b.nombre||b.codigo));
       });
 
       const DASH_POR_PAG = 50;
@@ -714,8 +716,8 @@
       const tbody = document.getElementById("tb-dash");
       tbody.innerHTML = "";
       pagina.forEach((e, i) => {
-        const nombre = capitalize(e.nombre || e.id);
-        const ent = conts[e.id] || 0;
+        const nombre = capitalize(e.nombre || e.codigo);
+        const ent = conts[e.codigo] || 0;
         const total = Number(e.hasta) - Number(e.desde) + 1;
         const disp = Math.max(0, total - ent);
         const pct  = total > 0 ? Math.min(100, Math.round((ent/total)*100)) : 0;
@@ -735,8 +737,8 @@
       const lm = document.getElementById("lm-dash");
       lm.innerHTML = "";
       pagina.forEach((e, i) => {
-        const nombre = capitalize(e.nombre || e.id);
-        const ent = conts[e.id] || 0;
+        const nombre = capitalize(e.nombre || e.codigo);
+        const ent = conts[e.codigo] || 0;
         const total = Number(e.hasta) - Number(e.desde) + 1;
         const disp = Math.max(0, total - ent);
         const pct  = total > 0 ? Math.min(100, Math.round((ent/total)*100)) : 0;
@@ -783,82 +785,20 @@
     const btn = document.getElementById("btn-recalcular");
     if (btn) { btn.disabled = true; btn.textContent = "Calculando…"; }
     try {
-      const hoyStr  = new Date().toISOString().slice(0,10);
-      const hoyDate = new Date(hoyStr + "T00:00:00");
-      const manDate = new Date(hoyDate.getTime() + 86400000);
-      const [cTotal, cHoy] = await Promise.all([
-        getCountFromServer(collection(db,"registros")),
-        getCountFromServer(query(collection(db,"registros"), where("fecha",">=",hoyDate), where("fecha","<",manDate)))
-      ]);
-      await setDoc(doc(db,"stats","_stats"), { total: cTotal.data().count, hoy: cHoy.data().count, ultimaActualizacion: serverTimestamp() });
-      if (btn) { btn.textContent = "✓ Listo"; setTimeout(()=>{ btn.disabled=false; btn.textContent="Recalcular stats"; }, 2500); }
-      cargarDashboard();
+      await fetchDashboardData();
+      if (btn) { btn.textContent = "✓ Listo"; setTimeout(()=>{ btn.disabled=false; btn.textContent="Recalcular datos"; }, 2500); }
     } catch(e) {
       if (btn) { btn.disabled=false; btn.textContent="Error — reintentar"; }
       console.error(e);
     }
   };
 
-  async function _fetchBloque(cursor, empresaId) {
-    let q;
-    if (empresaId) {
-      q = cursor
-        ? query(collection(db,"registros"), where("empresa","==",empresaId), orderBy("fecha","desc"), startAfter(cursor), limit(PAGE_SIZE))
-        : query(collection(db,"registros"), where("empresa","==",empresaId), orderBy("fecha","desc"), limit(PAGE_SIZE));
-    } else {
-      q = cursor
-        ? query(collection(db,"registros"), orderBy("fecha","desc"), startAfter(cursor), limit(PAGE_SIZE))
-        : query(collection(db,"registros"), orderBy("fecha","desc"), limit(PAGE_SIZE));
-    }
-    return getDocs(q);
+  // ── REGISTROS (paginación server-side con .range(), sin descargar todo) ────
+  async function fetchEmpresasMap() {
+    const { data, error } = await supabase.from("empresas").select("codigo,nombre");
+    if (error) { console.error(error); return; }
+    (data||[]).forEach(e => { empsMap[e.codigo] = e.nombre || e.codigo; });
   }
-
-  window.cargarRegistros = async () => {
-    if (regCargando) return;
-    regCargando = true;
-    regCursors = [null]; regBloqueActual = 0;
-    regFiltroEmp  = document.getElementById("fil-emp").value;
-    regFiltroBusq = "";
-    document.getElementById("buscar").value = "";
-    document.getElementById("spin-reg").style.display  = "block";
-    document.getElementById("t-reg").style.display     = "none";
-    document.getElementById("lm-reg").innerHTML        = "";
-    document.getElementById("vacio-reg").style.display = "none";
-    document.getElementById("pag-reg").style.display   = "none";
-    try {
-      if (Object.keys(empsMap).length === 0) {
-        const snapEmp = await getDocs(collection(db,"empresas"));
-        snapEmp.docs.forEach(d => { empsMap[d.id] = d.data().nombre || d.id; });
-      }
-      poblarFiltro();
-      const snap = await _fetchBloque(null, regFiltroEmp);
-      regs = snap.docs.map(d => d.data());
-      if (snap.docs.length === PAGE_SIZE) regCursors[1] = snap.docs[snap.docs.length - 1];
-      filtrar();
-    } catch(e) {
-      document.getElementById("spin-reg").innerHTML = "<p style='color:var(--rojo);padding:20px'>Error al cargar: " + e.message + "</p>";
-    } finally { regCargando = false; }
-  };
-
-  window.cargarBloque = async (indice) => {
-    if (regCargando || indice < 0) return;
-    regCargando = true;
-    document.getElementById("spin-reg").style.display = "block";
-    document.getElementById("t-reg").style.display    = "none";
-    document.getElementById("lm-reg").innerHTML       = "";
-    try {
-      const cursor = regCursors[indice] ?? null;
-      const snap   = await _fetchBloque(cursor, regFiltroEmp);
-      regs = snap.docs.map(d => d.data());
-      regBloqueActual = indice;
-      if (snap.docs.length === PAGE_SIZE && !regCursors[indice + 1])
-        regCursors[indice + 1] = snap.docs[snap.docs.length - 1];
-      regFiltroBusq = document.getElementById("buscar").value.toLowerCase();
-      filtrar();
-    } catch(e) {
-      document.getElementById("spin-reg").innerHTML = "<p style='color:var(--rojo);padding:20px'>Error: " + e.message + "</p>";
-    } finally { regCargando = false; }
-  };
 
   function poblarFiltro() {
     const sel = document.getElementById("fil-emp");
@@ -872,59 +812,66 @@
     sel.value = act;
   }
 
+  window.cargarRegistros = async () => {
+    regFiltroEmp  = document.getElementById("fil-emp").value;
+    regFiltroBusq = "";
+    document.getElementById("buscar").value = "";
+    if (Object.keys(empsMap).length === 0) await fetchEmpresasMap();
+    poblarFiltro();
+    await fetchPagina(1);
+  };
+
+  async function fetchPagina(pg) {
+    if (regCargando) return;
+    regCargando = true;
+    document.getElementById("spin-reg").style.display  = "block";
+    document.getElementById("t-reg").style.display     = "none";
+    document.getElementById("lm-reg").innerHTML        = "";
+    document.getElementById("vacio-reg").style.display = "none";
+    document.getElementById("pag-reg").style.display   = "none";
+    document.getElementById("nav-bloques").style.display = "none"; // ya no se usa con Supabase
+    try {
+      let q = supabase.from("registros").select("*", { count: "exact" });
+      if (regFiltroEmp)  q = q.eq("empresa_codigo", regFiltroEmp);
+      if (regFiltroBusq) {
+        const b = regFiltroBusq.replace(/[%,]/g, "");
+        q = q.or(`nombre.ilike.%${b}%,cedula.ilike.%${b}%,telefono.ilike.%${b}%,email.ilike.%${b}%`);
+      }
+      q = q.order("fecha", { ascending: false }).range((pg-1)*POR_PAGINA, pg*POR_PAGINA - 1);
+      const { data, count, error } = await q;
+      if (error) throw error;
+      regsCache = data || [];
+      regsTotal = count || 0;
+      paginaActual = pg;
+      renderPagina();
+    } catch(e) {
+      document.getElementById("spin-reg").innerHTML = "<p style='color:var(--rojo);padding:20px'>Error al cargar: " + e.message + "</p>";
+    } finally { regCargando = false; }
+  }
+
   window.filtrar = () => {
     regFiltroBusq = document.getElementById("buscar").value.toLowerCase();
-    const empNueva = document.getElementById("fil-emp").value;
-    if (empNueva !== regFiltroEmp) {
-      regFiltroEmp = empNueva; regCursors = [null]; regBloqueActual = 0;
-      cargarRegistros(); return;
-    }
-    regsCache = regs.filter(r => {
-      if (!regFiltroBusq) return true;
-      return (
-        (r.nombre   && r.nombre.toLowerCase().includes(regFiltroBusq)) ||
-        (r.cedula   && r.cedula.includes(regFiltroBusq))               || // ← NUEVO: buscar por cédula
-        (r.telefono && r.telefono.includes(regFiltroBusq))             ||
-        (r.email    && r.email.toLowerCase().includes(regFiltroBusq))
-      );
-    });
-    paginaActual = 1;
-    renderPagina();
+    regFiltroEmp  = document.getElementById("fil-emp").value;
+    fetchPagina(1);
   };
 
   function renderPagina() {
     const isMobile = window.innerWidth <= 768;
-    const total    = regsCache.length;
+    const total    = regsTotal;
     const inicio   = (paginaActual - 1) * POR_PAGINA;
-    const fin      = Math.min(inicio + POR_PAGINA, total);
-    const pagina   = regsCache.slice(inicio, fin);
+    const pagina   = regsCache; // ya viene paginado desde Supabase
 
     document.getElementById("spin-reg").style.display  = "none";
     document.getElementById("vacio-reg").style.display = total === 0 ? "block" : "none";
     document.getElementById("t-reg").style.display     = (total > 0 && !isMobile) ? "table" : "none";
-    document.getElementById("pag-reg").style.display   = total > POR_PAGINA ? "block" : "none";
-
-    const navBloques = document.getElementById("nav-bloques");
-    const hayMas = regs.length === PAGE_SIZE || regBloqueActual > 0;
-    navBloques.style.display = hayMas ? "flex" : "none";
-    const btnAnt = document.getElementById("btn-bloque-ant");
-    const btnSig = document.getElementById("btn-bloque-sig");
-    if (btnAnt) btnAnt.disabled = regBloqueActual === 0 || regCargando;
-    if (btnSig) btnSig.disabled = !regCursors[regBloqueActual + 1] || regCargando;
-    const lbl = document.getElementById("lbl-bloque");
-    if (lbl) {
-      const desde = regBloqueActual * PAGE_SIZE + 1;
-      const hasta = regBloqueActual * PAGE_SIZE + regs.length;
-      lbl.textContent = "Registros " + desde + " – " + hasta;
-    }
+    document.getElementById("pag-reg").style.display    = total > POR_PAGINA ? "block" : "none";
 
     // ── Tabla escritorio ──────────────────────────────────────────────────
     const tbody = document.getElementById("tb-reg");
     tbody.innerHTML = "";
     pagina.forEach((r, i) => {
-      const fs2       = fstr(r.fecha);
-      const fecha     = fs2 ? new Date(fs2).toLocaleString("es-CO",{dateStyle:"short",timeStyle:"short"}) : "";
-      const codigoEmp = r.empresa || "";
+      const fecha     = r.fecha ? new Date(r.fecha).toLocaleString("es-CO",{dateStyle:"short",timeStyle:"short"}) : "";
+      const codigoEmp = r.empresa_codigo || "";
       const nombreEmp = empsMap[codigoEmp] || codigoEmp;
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -938,7 +885,7 @@
         <td>${esc(r.email)}</td>
         <td>${esc(r.direccion)}</td>
         <td style="color:var(--sub);font-size:12px">${fecha}</td>
-        <td style="font-weight:600;color:${authColor(r.autorizaDatos)}">${authTxt(r.autorizaDatos)}</td>`;
+        <td style="font-weight:600;color:${authColor(r.autoriza_datos)}">${authTxt(r.autoriza_datos)}</td>`;
       tbody.appendChild(tr);
     });
 
@@ -947,9 +894,8 @@
     lm.innerHTML = "";
     if (isMobile) {
       pagina.forEach(r => {
-        const fs2       = fstr(r.fecha);
-        const fecha     = fs2 ? new Date(fs2).toLocaleString("es-CO",{dateStyle:"short",timeStyle:"short"}) : "";
-        const codigoEmp = r.empresa || "";
+        const fecha     = r.fecha ? new Date(r.fecha).toLocaleString("es-CO",{dateStyle:"short",timeStyle:"short"}) : "";
+        const codigoEmp = r.empresa_codigo || "";
         const nombreEmp = empsMap[codigoEmp] || codigoEmp;
         const d = document.createElement("div");
         d.className = "row-m";
@@ -968,13 +914,13 @@
             CC/ID: <strong style="font-family:monospace">${r.cedula||'—'}</strong>
             · ${r.telefono||"-"} · ${r.email||"-"}${r.direccion ? ' · '+r.direccion : ''}
           </div>
-          <div style="margin-top:5px;font-size:11px;font-weight:600;color:${authColor(r.autorizaDatos)}">Datos personales: ${authTxt(r.autorizaDatos) === "Sí" ? "Sí autoriza" : authTxt(r.autorizaDatos) === "No" ? "No autoriza" : "—"}</div>`;
+          <div style="margin-top:5px;font-size:11px;font-weight:600;color:${authColor(r.autoriza_datos)}">Datos personales: ${authTxt(r.autoriza_datos) === "Sí" ? "Sí autoriza" : authTxt(r.autoriza_datos) === "No" ? "No autoriza" : "—"}</div>`;
         lm.appendChild(d);
       });
     }
 
     buildPaginator("pag-reg", total, paginaActual, POR_PAGINA, (pg) => {
-      paginaActual = pg; renderPagina(); window.scrollTo({ top: 0, behavior: "smooth" });
+      fetchPagina(pg); window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
 
@@ -986,7 +932,7 @@
     if (!empresaFiltro && _exportacionesRealizadas >= MAX_EXPORTS_SIN_FILTRO) {
       const ok = confirm(
         "⚠️ Ya realizaste una exportación completa en esta sesión.\n\n" +
-        "Exportar todos los registros puede consumir hasta 30,000 lecturas de Firestore.\n\n" +
+        "Exportar todos los registros puede tardar si hay muchos miles de filas.\n\n" +
         "¿Deseas continuar de todas formas?"
       );
       if (!ok) return;
@@ -995,52 +941,34 @@
     const txtOrig = btn.innerHTML;
     btn.innerHTML = "⏳ Preparando…";
     try {
-      if (Object.keys(empsMap).length === 0) {
-        const snapEmp = await getDocs(collection(db,"empresas"));
-        snapEmp.docs.forEach(d => { empsMap[d.id] = d.data().nombre || d.id; });
-      }
-      const buscarFiltro   = document.getElementById("buscar").value.toLowerCase();
+      if (Object.keys(empsMap).length === 0) await fetchEmpresasMap();
+      const buscarFiltro   = document.getElementById("buscar").value.toLowerCase().replace(/[%,]/g, "");
       const fecha_export   = new Date().toISOString().slice(0,10);
       const nombre_archivo = empresaFiltro
         ? "registros-" + (empsMap[empresaFiltro]||empresaFiltro).replace(/[^a-z0-9]/gi,"-") + "-" + fecha_export + ".csv"
         : "registros-semana-comercial-" + fecha_export + ".csv";
 
-      let cursor = null, totalLeidos = 0, filas = [];
+      let offset = 0, totalLeidos = 0, filas = [];
+      const LOTE = 1000;
       while (true) {
-        let q;
-        if (empresaFiltro) {
-          q = cursor
-            ? query(collection(db,"registros"), where("empresa","==",empresaFiltro), orderBy("fecha","desc"), startAfter(cursor), limit(500))
-            : query(collection(db,"registros"), where("empresa","==",empresaFiltro), orderBy("fecha","desc"), limit(500));
-        } else {
-          q = cursor
-            ? query(collection(db,"registros"), orderBy("fecha","desc"), startAfter(cursor), limit(500))
-            : query(collection(db,"registros"), orderBy("fecha","desc"), limit(500));
-        }
-        const snap = await getDocs(q);
-        if (snap.empty) break;
-        snap.docs.forEach(d => {
-          const r         = d.data();
-          const fs2       = fstr(r.fecha);
-          const fecha     = fs2 ? new Date(fs2).toLocaleString("es-CO") : "";
-          const codigoEmp = r.empresa || "";
+        let q = supabase.from("registros").select("*");
+        if (empresaFiltro)  q = q.eq("empresa_codigo", empresaFiltro);
+        if (buscarFiltro)   q = q.or(`nombre.ilike.%${buscarFiltro}%,cedula.ilike.%${buscarFiltro}%,telefono.ilike.%${buscarFiltro}%,email.ilike.%${buscarFiltro}%`);
+        q = q.order("fecha", { ascending: false }).range(offset, offset + LOTE - 1);
+        const { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        data.forEach(r => {
+          const fecha     = r.fecha ? new Date(r.fecha).toLocaleString("es-CO") : "";
+          const codigoEmp = r.empresa_codigo || "";
           const nombreEmp = empsMap[codigoEmp] || codigoEmp;
-          if (buscarFiltro) {
-            const okB =
-              (r.nombre   && r.nombre.toLowerCase().includes(buscarFiltro))   ||
-              (r.cedula   && r.cedula.includes(buscarFiltro))                 || // ← NUEVO
-              (r.telefono && r.telefono.includes(buscarFiltro))               ||
-              (r.email    && r.email.toLowerCase().includes(buscarFiltro));
-            if (!okB) return;
-          }
-          const autorizaTxt = r.autorizaDatos === true ? "Sí autoriza" : r.autorizaDatos === false ? "No autoriza" : "Sin respuesta";
-          // ← Identificación añadida después de Nombre
+          const autorizaTxt = r.autoriza_datos === true ? "Sí autoriza" : r.autoriza_datos === false ? "No autoriza" : "Sin respuesta";
           filas.push([r.boleta, codigoEmp, nombreEmp, r.nombre, r.cedula||"", r.telefono, r.email, r.direccion||"", fecha, autorizaTxt]);
         });
-        totalLeidos += snap.docs.length;
+        totalLeidos += data.length;
         btn.innerHTML = "⏳ " + totalLeidos + " registros…";
-        if (snap.docs.length < 500) break;
-        cursor = snap.docs[snap.docs.length - 1];
+        if (data.length < LOTE) break;
+        offset += LOTE;
       }
 
       if (filas.length === 0) {
@@ -1049,7 +977,6 @@
         return;
       }
       const toCSV = arr => arr.map(v => JSON.stringify(v == null ? '' : String(v))).join(',');
-      // ← Encabezado con columna Identificacion después de Nombre
       const HEADER = 'Boleta,Codigo Empresa,Razon Social,Nombre,Identificacion,Telefono,Email,Direccion,Fecha,Autorizacion datos';
       let csv = HEADER + '\n';
       filas.forEach(fila => { csv += toCSV(fila) + '\n'; });
@@ -1068,7 +995,7 @@
     }
   };
 
-  // ── PAGINACIÓN GENÉRICA ───────────────────────────────────────────────────
+  // ── PAGINACIÓN GENÉRICA (sin cambios) ──────────────────────────────────────
   function buildPaginator(containerId, total, pagActual, porPagina, onIr) {
     const pag      = document.getElementById(containerId);
     const totalPag = Math.ceil(total / porPagina);
@@ -1144,10 +1071,15 @@
     document.getElementById("vacio-emp").style.display = "none";
     document.getElementById("pag-emp").style.display   = "none";
     try {
-      const [sE, sC] = await Promise.all([getDocs(collection(db,"empresas")), getDocs(collection(db,"contadores"))]);
-      emps  = sE.docs.map(d=>({id:d.id,...d.data()}));
+      const [{ data: eData, error: e1 }, { data: cData, error: e2 }] = await Promise.all([
+        supabase.from("empresas").select("*"),
+        supabase.from("conteo_por_empresa").select("*")
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+      emps = eData || [];
       conts = {};
-      sC.docs.forEach(d=>{conts[d.id]=d.data().actual||0;});
+      (cData||[]).forEach(c => { conts[c.empresa_codigo] = c.total; });
       emps.sort((a, b) => Number(b.desde) - Number(a.desde));
       empsTodos = emps; empsCache = [...emps]; empsPagActual = 1;
       renderEmpresas();
@@ -1170,12 +1102,12 @@
     const tbody = document.getElementById("tb-emp");
     tbody.innerHTML = "";
     pagina.forEach((e, i) => {
-      const ent  = conts[e.id]||0;
+      const ent  = conts[e.codigo]||0;
       const tot  = Number(e.hasta)-Number(e.desde)+1;
       const disp = Math.max(0, tot-ent);
       const pct  = tot>0 ? Math.min(100,Math.round(ent/tot*100)) : 0;
       const dispColor = disp>0 ? "var(--verde)" : "var(--rojo)";
-      const nombreMostrar = capitalize(e.nombre||e.id);
+      const nombreMostrar = capitalize(e.nombre||e.codigo);
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="row-num">${inicio+i+1}</span></td>
@@ -1191,7 +1123,7 @@
         </td>
         <td>
           <button class="btn btn-p btn-sm"
-            onclick="abrirModal('${e.id}','${nombreMostrar.replace(/'/g,"\\'")}',${e.desde},${e.hasta},${ent})">
+            onclick="abrirModal('${e.codigo}','${nombreMostrar.replace(/'/g,"\\'")}',${e.desde},${e.hasta},${ent})">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:3px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar
           </button>
         </td>`;
@@ -1201,11 +1133,11 @@
     lm.innerHTML = "";
     if (isMobile) {
       pagina.forEach(e => {
-        const ent  = conts[e.id]||0;
+        const ent  = conts[e.codigo]||0;
         const tot  = Number(e.hasta)-Number(e.desde)+1;
         const disp = Math.max(0,tot-ent);
         const pct  = tot>0?Math.min(100,Math.round(ent/tot*100)):0;
-        const nombreMovil = capitalize(e.nombre||e.id);
+        const nombreMovil = capitalize(e.nombre||e.codigo);
         const d = document.createElement("div");
         d.className="emp-card";
         d.innerHTML=`
@@ -1215,7 +1147,7 @@
               <div class="emp-card-id"><span style="font-family:monospace;background:#e6f4ec;color:#005a30;padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px">${e.codigo||'—'}</span> · NIT: ${e.nit||'—'} · Rango: ${e.desde}–${e.hasta}</div>
             </div>
             <button class="btn btn-p btn-sm"
-              onclick="abrirModal('${e.id}','${nombreMovil.replace(/'/g,"\\'")}',${e.desde},${e.hasta},${ent})">
+              onclick="abrirModal('${e.codigo}','${nombreMovil.replace(/'/g,"\\'")}',${e.desde},${e.hasta},${ent})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:3px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar</button>
           </div>
           <div class="emp-grid">
@@ -1244,16 +1176,20 @@
     if (!nombre||!desde||!hasta){ msg.textContent="Completa todos los campos"; msg.className="fmsg error"; msg.style.display="block"; return; }
     if (desde>=hasta){ msg.textContent="'Hasta' debe ser mayor que 'Desde'"; msg.className="fmsg error"; msg.style.display="block"; return; }
     try {
-      const snapEmp = await getDocs(collection(db,"empresas"));
-      const conflicto = snapEmp.docs.find(d => {
-        const e = d.data(); return desde <= Number(e.hasta) && hasta >= Number(e.desde);
-      });
+      // Usamos la lista de empresas ya cargada para revisar cruces de rango,
+      // igual que antes con Firestore.
+      if (empsTodos.length === 0) {
+        const { data } = await supabase.from("empresas").select("*");
+        empsTodos = data || [];
+      }
+      const conflicto = empsTodos.find(e => desde <= Number(e.hasta) && hasta >= Number(e.desde));
       if (conflicto) {
         msg.textContent = "El rango ingresado (" + desde + "–" + hasta + ") se cruza con rangos ya asignados.";
         msg.className="fmsg error"; msg.style.display="block"; return;
       }
-      const codigo = await genCodigoUnico(snapEmp.docs);
-      await setDoc(doc(db,"empresas",codigo),{nit,nombre,desde,hasta,codigo,creadoEn:Date.now()});
+      const codigo = genCodigoUnico(empsTodos.map(e => e.codigo));
+      const { error } = await supabase.from("empresas").insert({ nit, nombre, desde, hasta, codigo });
+      if (error) throw error;
       msg.textContent="Registro exitoso";
       msg.className="fmsg ok"; msg.style.display="block";
       setTimeout(() => { msg.style.display="none"; }, 3000);
@@ -1262,15 +1198,15 @@
     } catch(e){ msg.textContent="Error: "+e.message; msg.className="fmsg error"; msg.style.display="block"; }
   };
 
-  window.abrirModal = (id, nombre, desde, hasta, contador) => {
-    const empData = empsTodos.find(e => e.id === id) || {};
-    document.getElementById("m-id").value       = id;
+  window.abrirModal = (codigo, nombre, desde, hasta, contador) => {
+    const empData = empsTodos.find(e => e.codigo === codigo) || {};
+    document.getElementById("m-id").value       = codigo;
     document.getElementById("m-nit").value      = empData.nit || "";
     document.getElementById("m-nombre").value   = nombre;
     document.getElementById("m-desde").value    = desde;
     document.getElementById("m-hasta").value    = hasta;
     document.getElementById("m-contador").value = contador;
-    document.getElementById("modal-id").textContent = "ID: " + id;
+    document.getElementById("modal-id").textContent = "Código: " + codigo;
     document.getElementById("msg-modal").style.display = "none";
     document.getElementById("modal").classList.add("visible");
   };
@@ -1278,33 +1214,24 @@
   window.cerrarModal = () => { document.getElementById("modal").classList.remove("visible"); };
 
   window.guardarEmpresa = async () => {
-    const id       = document.getElementById("m-id").value;
+    const codigo   = document.getElementById("m-id").value;
     const nit      = document.getElementById("m-nit").value.trim().replace(/\D/g,"");
     const _n2      = document.getElementById("m-nombre").value.trim();
     const nombre   = _n2 ? _n2.charAt(0).toUpperCase() + _n2.slice(1).toLowerCase() : _n2;
     const desde    = Number(document.getElementById("m-desde").value);
     const hasta    = Number(document.getElementById("m-hasta").value);
-    const contador = Number(document.getElementById("m-contador").value);
     const msg      = document.getElementById("msg-modal");
     msg.style.display = "none";
-    if (!nombre||isNaN(desde)||isNaN(hasta)||isNaN(contador)){ msg.textContent="Completa todos los campos"; msg.className="fmsg error"; msg.style.display="block"; return; }
+    if (!nombre||isNaN(desde)||isNaN(hasta)){ msg.textContent="Completa todos los campos"; msg.className="fmsg error"; msg.style.display="block"; return; }
     if (desde>=hasta){ msg.textContent="'Hasta' debe ser mayor que 'Desde'"; msg.className="fmsg error"; msg.style.display="block"; return; }
-    if (contador<0){ msg.textContent="El contador no puede ser negativo"; msg.className="fmsg error"; msg.style.display="block"; return; }
     try {
-      const snapEmp = await getDocs(collection(db,"empresas"));
-      const conflicto = snapEmp.docs.find(d => {
-        if (d.id === id) return false;
-        const e = d.data(); return desde <= Number(e.hasta) && hasta >= Number(e.desde);
-      });
+      const conflicto = empsTodos.find(e => e.codigo !== codigo && desde <= Number(e.hasta) && hasta >= Number(e.desde));
       if (conflicto) {
-        const ec = conflicto.data();
-        msg.textContent = "El rango " + desde + "-" + hasta + " se cruza con (" + (ec.nombre||conflicto.id) + ") rango " + ec.desde + "-" + ec.hasta + ".";
+        msg.textContent = "El rango " + desde + "-" + hasta + " se cruza con (" + (conflicto.nombre||conflicto.codigo) + ") rango " + conflicto.desde + "-" + conflicto.hasta + ".";
         msg.className="fmsg error"; msg.style.display="block"; return;
       }
-      const batch = writeBatch(db);
-      batch.set(doc(db,"empresas",id),   { nit, nombre, desde, hasta, codigo: id }, { merge: true });
-      batch.set(doc(db,"contadores",id), { actual: contador });
-      await batch.commit();
+      const { error } = await supabase.from("empresas").update({ nit, nombre, desde, hasta }).eq("codigo", codigo);
+      if (error) throw error;
       msg.textContent="✅ Cambios guardados"; msg.className="fmsg ok"; msg.style.display="block";
       setTimeout(()=>{ cerrarModal(); cargarEmpresas(); cargarDashboard(); }, 1000);
     } catch(e){ msg.textContent="Error: "+e.message; msg.className="fmsg error"; msg.style.display="block"; }
@@ -1321,8 +1248,9 @@
     document.getElementById("vacio-enl").style.display = "none";
     document.getElementById("pag-enl").style.display   = "none";
     try {
-      const snap = await getDocs(collection(db,"empresas"));
-      emps = snap.docs.map(d=>({id:d.id,...d.data()}));
+      const { data, error } = await supabase.from("empresas").select("*");
+      if (error) throw error;
+      emps = data || [];
       emps.sort((a, b) => Number(b.desde) - Number(a.desde));
       enlCache = emps; enlPagActual = 1;
       renderEnlaces();
@@ -1331,7 +1259,7 @@
 
   window.filtrarEnlaces = () => {
     const q = document.getElementById("buscar-enlace").value.toLowerCase();
-    enlCache = emps.filter(e=>(e.nombre||e.id).toLowerCase().includes(q)||e.id.toLowerCase().includes(q));
+    enlCache = emps.filter(e=>(e.nombre||e.codigo).toLowerCase().includes(q)||e.codigo.toLowerCase().includes(q));
     enlPagActual = 1; renderEnlaces();
   };
 
@@ -1348,17 +1276,15 @@
     const tbody = document.getElementById("tb-enl");
     tbody.innerHTML = "";
     pagina.forEach((e, i) => {
-      const codigoEnlace = e.codigo || e.id;
+      const codigoEnlace = e.codigo;
       const url = BASE + encodeURIComponent(codigoEnlace);
-      const sinCodigo = !e.codigo;
-      const nombreEnl = capitalize(e.nombre || e.id);
+      const nombreEnl = capitalize(e.nombre || e.codigo);
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><span class="row-num">${inicio+i+1}</span></td>
         <td><strong style="color:var(--azul)">${esc(nombreEnl)}</strong></td>
         <td>
           <span style="font-family:monospace;background:#e6f4ec;color:#005a30;padding:3px 10px;border-radius:8px;font-weight:700;font-size:13px;letter-spacing:0.05em">${codigoEnlace}</span>
-          ${sinCodigo ? '<span title="Empresa creada antes del sistema de códigos" style="font-size:10px;color:#f59e0b;margin-left:4px">⚠</span>' : ''}
         </td>
         <td><span class="badge-e">${e.desde}–${e.hasta}</span></td>
         <td style="width:260px;max-width:260px">
@@ -1375,9 +1301,9 @@
     lm.innerHTML = "";
     if (isMobile) {
       pagina.forEach(e => {
-        const codigoEnlace = e.codigo || e.id;
+        const codigoEnlace = e.codigo;
         const url = BASE + encodeURIComponent(codigoEnlace);
-        const nombreEnlM = capitalize(e.nombre || e.id);
+        const nombreEnlM = capitalize(e.nombre || e.codigo);
         const d = document.createElement("div");
         d.className = "row-m";
         d.innerHTML = `
@@ -1412,11 +1338,8 @@
   window.toggleFormEmpresa = () => {
     const toggle = document.getElementById("toggle-nueva-empresa");
     const body   = document.getElementById("body-nueva-empresa");
-    const abierto = toggle.classList.toggle("abierto");
-    body.classList.toggle("abierto", abierto);
-    if (abierto) {
-      // sin autofocus — el usuario elige dónde iniciar
-    }
+    toggle.classList.toggle("abierto");
+    body.classList.toggle("abierto", toggle.classList.contains("abierto"));
   };
 
   // Cerrar formulario tras crear empresa con éxito
@@ -1433,7 +1356,7 @@
   };
 
   window.copiarTodos = () => {
-    const txt = emps.map(e=>(e.nombre||e.id)+": "+BASE+encodeURIComponent(e.codigo||e.id)).join("\n");
+    const txt = emps.map(e=>(e.nombre||e.codigo)+": "+BASE+encodeURIComponent(e.codigo)).join("\n");
     navigator.clipboard.writeText(txt).then(()=>alert("¡Todos los enlaces copiados!"));
   };
 
