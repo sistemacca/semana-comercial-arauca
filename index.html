@@ -384,21 +384,12 @@
   <div class="resultado" id="resultado"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, runTransaction, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  const SUPABASE_URL = "https://eugqcnqooypgxysoudaz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1Z3FjbnFvb3lwZ3h5c291ZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODE5NTgsImV4cCI6MjEwMDY1Nzk1OH0.VnH8U_Dm29mutMG8D4Eibp9er2bqXcGcvS1ix-cVaiA";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyD75kntcW_TqAJznShE50ACAgvgjp1DlQc",
-    authDomain: "semana-comercial.firebaseapp.com",
-    projectId: "semana-comercial",
-    storageBucket: "semana-comercial.firebasestorage.app",
-    messagingSenderId: "52687643666",
-    appId: "1:52687643666:web:48e7106b88b2f2c2b364cb"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const CODIGO = new URLSearchParams(window.location.search).get("empresa") || "";
 
@@ -410,13 +401,20 @@
       return;
     }
     try {
-      const snap = await getDoc(doc(db, "empresas", CODIGO));
-      if (!snap.exists()) {
+      const { data, error } = await supabase
+        .from("empresas")
+        .select("codigo, nombre")
+        .eq("codigo", CODIGO)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
         resultado.innerHTML = '<p class="fallo">Empresa no registrada. Contacta al organizador.</p>';
         document.getElementById("empresa-label").textContent = "No encontrada";
         return;
       }
-      document.getElementById("empresa-label").textContent = snap.data().nombre || CODIGO;
+      document.getElementById("empresa-label").textContent = data.nombre || CODIGO;
       document.getElementById("formulario").style.display = "block";
     } catch (e) {
       resultado.innerHTML = '<p class="fallo">Error al cargar. Intenta de nuevo.</p>';
@@ -482,39 +480,38 @@
     btn.innerHTML = '<span class="spinner"></span>Procesando...';
 
     try {
-      const empresaRef  = doc(db, "empresas",  CODIGO);
-      const contadorRef = doc(db, "contadores", CODIGO);
-      let numeroBoleta;
+      // 1. Pide a la base de datos el siguiente número de boleta disponible.
+      //    La función asignar_boleta() usa "for update" internamente, así que
+      //    dos inscripciones simultáneas nunca reciben el mismo número.
+      const { data: numeroBoleta, error: errBoleta } = await supabase
+        .rpc("asignar_boleta", { p_empresa: CODIGO });
 
-      await runTransaction(db, async (tx) => {
-        const empSnap = await tx.get(empresaRef);
-        if (!empSnap.exists()) throw new Error("Empresa no encontrada");
-        const { desde, hasta } = empSnap.data();
-        const contSnap = await tx.get(contadorRef);
-        const actual   = contSnap.exists() ? contSnap.data().actual : 0;
-        const siguiente = desde + actual;
-        if (siguiente > hasta) throw new Error("Boletas agotadas para esta empresa");
-        numeroBoleta = siguiente;
-        tx.set(contadorRef, { actual: actual + 1 });
-      });
+      if (errBoleta) throw errBoleta;
 
-      await addDoc(collection(db, "registros"), {
-        empresa:        CODIGO,
-        boleta:         numeroBoleta,
-        nombre,
-        cedula:         cedula.replace(/\D/g, ""),
-        telefono,
-        email:          email || "",
-        direccion:      direccion || "",
-        autorizaDatos:  autorizacionSeleccionada === "si",
-        fecha:          new Date().toISOString()
-      });
+      // 2. Inserta el registro ya con la boleta asignada.
+      const { error: errInsert } = await supabase
+        .from("registros")
+        .insert({
+          empresa_codigo:  CODIGO,
+          boleta:          numeroBoleta,
+          nombre,
+          cedula:          cedula.replace(/\D/g, ""),
+          telefono,
+          email:           email || null,
+          direccion:       direccion || null,
+          autoriza_datos:  autorizacionSeleccionada === "si"
+        });
+
+      if (errInsert) throw errInsert;
 
       const urlComprobante = `comprobante.html?nombre=${encodeURIComponent(nombre)}&boleta=${numeroBoleta}&empresa=${encodeURIComponent(CODIGO)}`;
       window.location.href = urlComprobante;
 
     } catch (err) {
-      resultado.innerHTML = `<p class="fallo">${err.message === "Boletas agotadas para esta empresa" ? "Ya no hay boletas disponibles para esta empresa." : "Error al registrar. Intenta de nuevo."}</p>`;
+      const mensaje = (err.message || "").includes("agotaron")
+        ? "Ya no hay boletas disponibles para esta empresa."
+        : "Error al registrar. Intenta de nuevo.";
+      resultado.innerHTML = `<p class="fallo">${mensaje}</p>`;
       console.error(err);
       btn.disabled = false;
       btn.innerHTML = "Registrar";
