@@ -211,20 +211,12 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getFirestore, collection, query, where, getDocs, doc, getDoc }
-    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  const SUPABASE_URL = "https://eugqcnqooypgxysoudaz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1Z3FjbnFvb3lwZ3h5c291ZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODE5NTgsImV4cCI6MjEwMDY1Nzk1OH0.VnH8U_Dm29mutMG8D4Eibp9er2bqXcGcvS1ix-cVaiA";
 
-  const cfg = {
-    apiKey:            "AIzaSyD75kntcW_TqAJznShE50ACAgvgjp1DlQc",
-    authDomain:        "semana-comercial.firebaseapp.com",
-    projectId:         "semana-comercial",
-    storageBucket:     "semana-comercial.firebasestorage.app",
-    messagingSenderId: "52687643666",
-    appId:             "1:52687643666:web:48e7106b88b2f2c2b364cb"
-  };
-
-  const db = getFirestore(initializeApp(cfg));
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   function mostrarError(msg) {
     document.getElementById("estado-cargando").style.display = "none";
@@ -254,35 +246,23 @@
   } else {
     (async () => {
       try {
-        const empSnap = await getDoc(doc(db, "empresas", pEmpresa));
-        if (!empSnap.exists()) {
-          mostrarError("La empresa de este enlace no existe en el sistema.");
-          return;
-        }
-        const empresaNombre = empSnap.data().nombre || pEmpresa;
+        const { data, error } = await supabase
+          .rpc("verificar_comprobante", { p_boleta: Number(pBoleta), p_empresa: pEmpresa })
+          .maybeSingle();
 
-        const snap = await getDocs(
-          query(collection(db, "registros"), where("boleta", "==", Number(pBoleta)))
-        );
+        if (error) throw error;
 
-        if (snap.empty) {
-          mostrarError("No se encontró un registro con este número de boleta. El enlace puede haber sido modificado.");
+        if (!data) {
+          mostrarError("No se encontró un registro con este número de boleta y empresa. El enlace puede haber sido modificado.");
           return;
         }
 
-        const datos = snap.docs[0].data();
-
-        if (datos.empresa !== pEmpresa) {
+        if (normalizar(data.nombre) !== normalizar(pNombre)) {
           mostrarError("Este comprobante no es válido. Los datos no coinciden.");
           return;
         }
 
-        if (normalizar(datos.nombre) !== normalizar(pNombre)) {
-          mostrarError("Este comprobante no es válido. Los datos no coinciden.");
-          return;
-        }
-
-        mostrarComprobante(datos.nombre, datos.boleta, empresaNombre);
+        mostrarComprobante(data.nombre, data.boleta, data.empresa_nombre || pEmpresa);
 
       } catch(e) {
         mostrarError("Error al verificar el registro. Intenta de nuevo más tarde.");
