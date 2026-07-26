@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Comprobante - Semana Comercial</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image: url('https://raw.githubusercontent.com/sistemacca/boletas-camara/main/fondo_login.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 0;
+    }
+    .card {
+      position: relative;
+      z-index: 1;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+      border-top: 6px solid #007d42;
+      overflow: hidden;
+      text-align: center;
+      width: 100%;
+      max-width: 420px;
+    }
+    .header { background: #007d42; padding: 24px 20px 20px; }
+    .header img { height: 52px; filter: brightness(0) invert(1); margin-bottom: 10px; }
+    .header .subtitulo { color: rgba(255,255,255,0.8); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+    .body { padding: 28px 24px; }
+
+    /* Ícono de éxito */
+    .check-icon {
+      width: 52px;
+      height: 52px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .check-icon svg { width: 26px; height: 26px; stroke: #16a34a; }
+
+    .badge-success { font-size: 13px; font-weight: 600; color: #16a34a; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .empresa { font-size: 15px; font-weight: 700; color: #007d42; margin-bottom: 4px; }
+    .nombre-usuario { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 20px; }
+    .boleta-box { background: #f0f4f8; border-radius: 14px; padding: 20px; margin-bottom: 20px; border: 2px dashed #007d42; }
+    .boleta-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .numero { font-size: 64px; font-weight: 700; color: #007d42; line-height: 1; }
+
+    /* Botón de descarga con ícono SVG */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: #007d42;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover { background: #005a30; }
+    .btn svg { width: 18px; height: 18px; stroke: white; flex-shrink: 0; }
+
+    /* Caja de captura con ícono SVG */
+    .captura-box {
+      background: #f0fdf4;
+      border-radius: 10px;
+      padding: 12px 14px;
+      border: 1px solid #bbf7d0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+    }
+    .captura-box .icon-wrap {
+      width: 36px;
+      height: 36px;
+      background: #dcfce7;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .captura-box .icon-wrap svg { width: 18px; height: 18px; stroke: #16a34a; }
+    .captura-box .cap-texto { display: flex; flex-direction: column; gap: 2px; }
+    .cap-titulo { font-size: 12px; font-weight: 600; color: #166534; }
+    .cap-sub { font-size: 11px; color: #4b7a5e; }
+
+    .footer-text { font-size: 11px; color: #94a3b8; margin-top: 20px; }
+
+    #estado-cargando { display: flex; flex-direction: column; align-items: center; padding: 48px 24px; gap: 16px; }
+    .spin { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #007d42; border-radius: 50%; animation: giro 0.7s linear infinite; }
+    @keyframes giro { to { transform: rotate(360deg); } }
+    #estado-cargando p { font-size: 14px; color: #64748b; }
+
+    #estado-error { display: none; padding: 36px 24px; }
+    .error-icon-wrap {
+      width: 56px; height: 56px;
+      background: #fee2e2;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .error-icon-wrap svg { width: 28px; height: 28px; stroke: #dc2626; }
+    .error-titulo { font-size: 18px; font-weight: 700; color: #dc2626; margin-bottom: 8px; }
+    .error-msg { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+    #estado-ok { display: none; }
+
+    @media (max-width: 480px) {
+      .body { padding: 20px 16px; }
+      .numero { font-size: 52px; }
+      .btn { padding: 15px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <img src="https://sistemacca.github.io/boletas-camara/logo.png">
+    <div class="subtitulo">Semana Comercial 2026</div>
+  </div>
+
+  <div id="estado-cargando">
+    <div class="spin"></div>
+    <p>Verificando registro...</p>
+  </div>
+
+  <!-- Estado de error con ícono SVG -->
+  <div id="estado-error" class="body">
+    <div class="error-icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    </div>
+    <div class="error-titulo">Comprobante no válido</div>
+    <div class="error-msg" id="error-detalle">Este enlace no corresponde a un registro real en el sistema.</div>
+  </div>
+
+  <div id="estado-ok">
+    <div class="body">
+
+      <!-- Ícono de éxito SVG -->
+      <div class="check-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+
+      <div class="badge-success">Registro exitoso</div>
+      <div class="empresa" id="empresa"></div>
+      <div class="nombre-usuario" id="nombre"></div>
+
+      <div class="boleta-box">
+        <div class="boleta-label">Tu número de boleta</div>
+        <div class="numero" id="boleta"></div>
+      </div>
+
+      <!-- Botón con ícono de descarga SVG -->
+      <button class="btn" id="btn-descargar" onclick="descargarJPG()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Descargar comprobante
+      </button>
+
+      <!-- Caja de captura con ícono de smartphone SVG -->
+      <div class="captura-box">
+        <div class="icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+        </div>
+        <div class="cap-texto">
+          <span class="cap-titulo">Toma una captura de pantalla</span>
+          <span class="cap-sub">Guarda este número como comprobante</span>
+        </div>
+      </div>
+
+      <div class="footer-text">Este comprobante es tu única prueba de participación</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import { getFirestore, collection, query, where, getDocs, doc, getDoc }
+    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+  const cfg = {
+    apiKey:            "AIzaSyD75kntcW_TqAJznShE50ACAgvgjp1DlQc",
+    authDomain:        "semana-comercial.firebaseapp.com",
+    projectId:         "semana-comercial",
+    storageBucket:     "semana-comercial.firebasestorage.app",
+    messagingSenderId: "52687643666",
+    appId:             "1:52687643666:web:48e7106b88b2f2c2b364cb"
+  };
+
+  const db = getFirestore(initializeApp(cfg));
+
+  function mostrarError(msg) {
+    document.getElementById("estado-cargando").style.display = "none";
+    document.getElementById("estado-error").style.display   = "block";
+    if (msg) document.getElementById("error-detalle").textContent = msg;
+  }
+
+  function mostrarComprobante(nombre, boleta, empresaNombre) {
+    document.getElementById("estado-cargando").style.display = "none";
+    document.getElementById("estado-ok").style.display       = "block";
+    document.getElementById("nombre").textContent  = nombre;
+    document.getElementById("boleta").textContent  = boleta;
+    document.getElementById("empresa").textContent = empresaNombre;
+  }
+
+  function normalizar(s) {
+    return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+  }
+
+  const params   = new URLSearchParams(window.location.search);
+  const pBoleta  = (params.get("boleta")  || "").trim();
+  const pEmpresa = (params.get("empresa") || "").trim();
+  const pNombre  = (params.get("nombre")  || "").trim();
+
+  if (!pBoleta || !pEmpresa || !pNombre) {
+    mostrarError("El enlace está incompleto o mal formado.");
+  } else {
+    (async () => {
+      try {
+        const empSnap = await getDoc(doc(db, "empresas", pEmpresa));
+        if (!empSnap.exists()) {
+          mostrarError("La empresa de este enlace no existe en el sistema.");
+          return;
+        }
+        const empresaNombre = empSnap.data().nombre || pEmpresa;
+
+        const snap = await getDocs(
+          query(collection(db, "registros"), where("boleta", "==", Number(pBoleta)))
+        );
+
+        if (snap.empty) {
+          mostrarError("No se encontró un registro con este número de boleta. El enlace puede haber sido modificado.");
+          return;
+        }
+
+        const datos = snap.docs[0].data();
+
+        if (datos.empresa !== pEmpresa) {
+          mostrarError("Este comprobante no es válido. Los datos no coinciden.");
+          return;
+        }
+
+        if (normalizar(datos.nombre) !== normalizar(pNombre)) {
+          mostrarError("Este comprobante no es válido. Los datos no coinciden.");
+          return;
+        }
+
+        mostrarComprobante(datos.nombre, datos.boleta, empresaNombre);
+
+      } catch(e) {
+        mostrarError("Error al verificar el registro. Intenta de nuevo más tarde.");
+        console.error(e);
+      }
+    })();
+  }
+
+  window.descargarJPG = function() {
+    const nombreV  = document.getElementById("nombre").textContent;
+    const boletaV  = document.getElementById("boleta").textContent;
+    const empresaV = document.getElementById("empresa").textContent;
+    const btn = document.getElementById("btn-descargar");
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">
+        <circle cx="12" cy="12" r="10"/><polyline points="10 8 12 12 14 8"/>
+      </svg>
+      Generando...`;
+    btn.disabled = true;
+    try {
+      const W = 600, H = 400;
+      const cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext("2d");
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        ctx.drawImage(img, 0, 0, W, H);
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.fillRect(0, 0, W, H);
+        dibujarCanvas(ctx, W, H, nombreV, boletaV, empresaV, cv, btn, boletaV);
+      };
+      img.onerror = function() {
+        ctx.fillStyle = "#f0fdf4"; ctx.fillRect(0, 0, W, H);
+        dibujarCanvas(ctx, W, H, nombreV, boletaV, empresaV, cv, btn, boletaV);
+      };
+      img.src = "https://raw.githubusercontent.com/sistemacca/boletas-camara/main/fondo_login.jpg";
+    } catch(e) {
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar comprobante`;
+      btn.disabled = false;
+      alert("Toma una captura de pantalla.");
+    }
+  };
+
+  function dibujarCanvas(ctx, W, H, nombreV, boletaV, empresaV, cv, btn, boletaNum) {
+    ctx.fillStyle = "#007d42"; ctx.fillRect(0, 0, W, 8);
+    ctx.fillStyle = "#d4af37"; ctx.fillRect(0, H - 6, W, 6);
+    ctx.fillStyle = "#007d42"; ctx.font = "bold 20px Arial"; ctx.textAlign = "center";
+    ctx.fillText("Cámara de Comercio de Arauca", W/2, 52);
+    ctx.font = "14px Arial"; ctx.fillStyle = "#64748b";
+    ctx.fillText("Semana Comercial 2026", W/2, 76);
+    ctx.strokeStyle = "#e2e8f0"; ctx.beginPath(); ctx.moveTo(40, 95); ctx.lineTo(W-40, 95); ctx.stroke();
+    ctx.font = "bold 15px Arial"; ctx.fillStyle = "#007d42";
+    ctx.fillText(empresaV, W/2, 125);
+    ctx.font = "16px Arial"; ctx.fillStyle = "#1e293b";
+    ctx.fillText(nombreV, W/2, 155);
+    ctx.font = "bold 90px Arial"; ctx.fillStyle = "#007d42";
+    ctx.fillText(boletaV, W/2, 260);
+    ctx.font = "14px Arial"; ctx.fillStyle = "#64748b";
+    ctx.fillText("Número de boleta", W/2, 288);
+    ctx.strokeStyle = "#e2e8f0"; ctx.beginPath(); ctx.moveTo(40, 308); ctx.lineTo(W-40, 308); ctx.stroke();
+    ctx.font = "bold 13px Arial"; ctx.fillStyle = "#166534";
+    ctx.fillText("Comprobante oficial de registro", W/2, 338);
+    ctx.font = "12px Arial"; ctx.fillStyle = "#64748b";
+    ctx.fillText("Conserva este documento como soporte", W/2, 360);
+
+    cv.toBlob(function(blob) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = "boleta-" + boletaNum + "-semana-comercial.jpg";
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="20 6 9 17 4 12"/></svg> Descargado`;
+      btn.style.background = "#16a34a";
+      setTimeout(() => {
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar comprobante`;
+        btn.style.background = "#007d42"; btn.disabled = false;
+      }, 2500);
+    }, "image/jpeg", 0.95);
+  }
+</script>
+</body>
+</html>
