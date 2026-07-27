@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel Admin - Bingo Cámara de Comercio</title>
+  <style>
+    :root {
+      --azul: #007D42; --azul2: #005a30; --oro: #d4af37;
+      --verde: #16a34a; --rojo: #dc2626; --bg: #f0f4f8;
+      --borde: #e2e8f0; --sub: #64748b; --texto: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--texto); }
+
+    #login {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: url('https://sistemacca.github.io/boletas-camara/fondo_login.jpg') center center / cover no-repeat; position: relative;
+      padding: 24px;
+    }
+    .login-logo { text-align: center; margin-bottom: 32px; color: white; }
+    .login-card { background: white; border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 420px; box-shadow: 0 24px 64px rgba(0,0,0,0.3); }
+    .login-card h2 { color: var(--azul); font-size: 20px; text-align: center; margin-bottom: 6px; }
+    .login-card p  { color: var(--sub); font-size: 13px; text-align: center; margin-bottom: 28px; }
+    .login-label { font-size: 12px; font-weight: 600; color: var(--azul); display: block; margin-bottom: 6px; }
+    .login-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--borde); border-radius: 12px; font-size: 16px; margin-bottom: 16px; }
+    .login-input:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0,125,66,0.1); }
+    .login-btn { width: 100%; padding: 16px; background: var(--azul); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; }
+    .login-btn:hover { background: var(--azul2); }
+    .login-error { color: var(--rojo); font-size: 13px; margin-top: 10px; text-align: center; }
+    .login-footer { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 24px; }
+
+    #app { display: none; }
+    .topbar-movil { display: none; position: fixed; top: 0; left: 0; right: 0; height: 58px; background: var(--azul); color: white; z-index: 200; padding: 0 16px; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .topbar-movil .titulo { font-size: 15px; font-weight: 600; }
+    .topbar-movil .subtitulo { font-size: 11px; opacity: 0.65; }
+    .btn-menu { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 6px; }
+
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 299; }
+    .overlay.visible { display: block; }
+    .sidebar { width: 256px; background: var(--azul); color: white; position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 300; transition: transform 0.28s ease; }
+    .sidebar-logo { padding: 28px 22px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo h2 { font-size: 15px; font-weight: 700; }
+    .sidebar-logo p  { font-size: 11px; opacity: 0.55; margin-top: 3px; }
+    .sidebar-menu { flex: 1; padding: 10px 0; overflow-y: auto; }
+    .menu-item { display: flex; align-items: center; gap: 14px; padding: 14px 22px; cursor: pointer; font-size: 14px; border-left: 3px solid transparent; }
+    .menu-item:hover  { background: rgba(255,255,255,0.08); }
+    .menu-item.activo { background: rgba(255,255,255,0.13); border-left-color: var(--oro); font-weight: 600; }
+    .menu-item .ic { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; } .menu-item .ic svg { width: 18px; height: 18px; }
+    .sidebar-foot { padding: 14px 22px; font-size: 11px; opacity: 0.35; border-top: 1px solid rgba(255,255,255,0.1); }
+
+    .layout { display: flex; min-height: 100vh; }
+    .main { margin-left: 256px; flex: 1; padding: 28px; min-width: 0; }
+    .panel { display: none; }
+    .panel.activo { display: block; }
+    .page-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+    .page-top h1 { font-size: 24px; color: var(--azul); font-weight: 700; }
+    .page-top p  { font-size: 13px; color: var(--sub); margin-top: 3px; }
+
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; overflow: hidden; }
+    .stat { background: white; border-radius: 14px; padding: 18px 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-top: 3px solid var(--azul); }
+    .stat-val { font-size: 34px; font-weight: 700; color: var(--azul); line-height: 1.1; }
+    .stat-lbl { font-size: 12px; color: var(--sub); margin-top: 5px; }
+
+    .card { background: white; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 20px; }
+    .card-head { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--borde); }
+    .card-head h3 { font-size: 15px; color: var(--azul); font-weight: 600; }
+    .controles { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--borde); }
+    .controles input, .controles select { padding: 10px 13px; border: 1.5px solid var(--borde); border-radius: 10px; font-size: 14px; flex: 1; min-width: 140px; background: white; }
+    .controles input:focus, .controles select:focus { outline: none; border-color: var(--azul); }
+
+    .tabla-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--azul); color: white; }
+    thead th { padding: 13px 14px; text-align: center; font-weight: 600; font-size: 11.5px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.1); }
+    thead th:last-child { border-right: none; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:hover { background: #e8f5ee; }
+    tbody td { padding: 11px 14px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; text-align: center; font-size: 13px; vertical-align: middle; }
+
+    .lista-m { display: none; }
+    .row-m { padding: 14px 16px; border-bottom: 1px solid var(--borde); }
+    .row-m-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .row-m-nombre { font-weight: 700; font-size: 14px; color: var(--azul); }
+    .row-m-meta { font-size: 11.5px; color: var(--sub); margin-top: 3px; }
+
+    .badge-b { background: #e6f4ec; color: var(--azul); padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 13px; }
+    .badge-id { font-family: monospace; background: #fef9e6; color: #92720a; padding: 3px 9px; border-radius: 6px; font-weight: 700; font-size: 11.5px; letter-spacing: 0.04em; }
+    .badge-e { background: #eef2ff; color: #3730a3; padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; }
+    .btn-p { background: var(--azul); color: white; } .btn-p:hover { background: var(--azul2); }
+    .btn-gray { background: #f1f5f9; color: var(--texto); } .btn-gray:hover { background: #e2e8f0; }
+    .btn-sm { padding: 7px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-full { width: 100%; justify-content: center; padding: 14px; font-size: 15px; }
+
+    .form-card { background: white; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; overflow: hidden; }
+    .form-card-toggle { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: background 0.15s, border-color 0.2s; }
+    .form-card-toggle:hover { background: #f8fafc; }
+    .form-card-toggle.abierto { border-bottom-color: var(--borde); }
+    .form-card-toggle h3 { color: var(--azul); font-size: 15px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .toggle-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--azul); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+    .toggle-icon svg { width: 14px; height: 14px; transition: transform 0.28s ease; }
+    .form-card-toggle.abierto .toggle-icon { background: #64748b; }
+    .form-card-toggle.abierto .toggle-icon svg { transform: rotate(45deg); }
+    .form-card-body { padding: 0 20px; max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.28s ease; }
+    .form-card-body.abierto { max-height: 700px; padding: 20px 20px 24px; }
+    .fg { margin-bottom: 14px; }
+    .fg label { display: block; font-size: 12px; font-weight: 600; color: var(--azul); margin-bottom: 6px; }
+    .fg input { width: 100%; padding: 13px 15px; border: 1.5px solid var(--borde); border-radius: 10px; font-size: 15px; }
+    .fg input:focus { outline: none; border-color: var(--azul); }
+    .fg .hint { font-size: 11px; color: var(--sub); margin-top: 5px; }
+    .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .fmsg { font-size: 13px; margin-top: 12px; padding: 12px 14px; border-radius: 10px; display: none; }
+    .fmsg.ok    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .fmsg.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+    .enlace-row { padding: 12px 0; border-bottom: 1px solid var(--borde); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .enlace-row:last-child { border-bottom: none; }
+
+    .spin-wrap { text-align: center; padding: 40px; color: var(--sub); }
+    .spin { display: block; width: 32px; height: 32px; border: 3px solid var(--borde); border-top-color: var(--azul); border-radius: 50%; animation: giro 0.7s linear infinite; margin: 0 auto 12px; }
+    @keyframes giro { to { transform: rotate(360deg); } }
+    .vacio { text-align: center; padding: 40px; color: #94a3b8; font-size: 14px; }
+
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 400; align-items: flex-end; justify-content: center; }
+    .modal-bg.visible { display: flex; }
+    .modal { background: white; border-radius: 20px 20px 0 0; padding: 10px 24px 36px; width: 100%; max-width: 500px; max-height: 92vh; overflow-y: auto; }
+    .modal-handle { width: 40px; height: 4px; background: var(--borde); border-radius: 2px; margin: 12px auto 20px; }
+    .modal h3 { color: var(--azul); font-size: 18px; margin-bottom: 4px; }
+    .modal-id { font-size: 12px; color: var(--sub); margin-bottom: 20px; }
+    .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+
+    .refresh-badge { display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; color: var(--verde); border: 1px solid #bbf7d0; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .refresh-dot { width: 7px; height: 7px; background: var(--verde); border-radius: 50%; animation: pulso 1.5s ease-in-out infinite; }
+    @keyframes pulso { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+    #pag-entregas, #pag-emp, #pag-enl { border-top: 1px solid var(--borde); background: #fafcfb; }
+    .pag-container { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; flex-wrap: wrap; gap: 12px; }
+    .pag-meta { font-size: 12.5px; color: var(--sub); white-space: nowrap; }
+    .pag-meta b { color: var(--texto); font-weight: 600; }
+    .pag-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .pag-nav { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; background: white; color: var(--texto); border: 1.5px solid var(--borde); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .pag-nav svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .pag-nav:hover:not(:disabled) { background: var(--azul); color: white; border-color: var(--azul); }
+    .pag-nav:disabled { opacity: 0.35; cursor: not-allowed; background: #f8fafc; color: #94a3b8; }
+    .pag-num { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: white; color: var(--sub); border: 1.5px solid var(--borde); border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; }
+    .pag-num:hover:not(.on) { background: #f0fdf4; color: var(--azul); border-color: var(--azul); }
+    .pag-num.on { background: var(--azul); color: white; border-color: var(--azul); font-weight: 700; cursor: default; }
+    .pag-dots-span { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 34px; color: #94a3b8; font-size: 13px; }
+    .row-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #f1f5f9; color: var(--sub); font-size: 11px; font-weight: 600; }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.abierto { transform: translateX(0); }
+      .main { margin-left: 0; padding: 16px; padding-top: 76px; }
+      .topbar-movil { display: flex; }
+      .stats { grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 16px; }
+      .stat-val { font-size: 28px; }
+      .tabla-scroll table { display: none; }
+      .lista-m { display: block; }
+      .f2 { grid-template-columns: 1fr; }
+      .enlace-row { flex-direction: column; align-items: flex-start; }
+      .page-top { flex-direction: column; }
+      .pag-container { justify-content: center; }
+      .pag-meta { width: 100%; text-align: center; }
+      .pag-nav span { display: none; }
+      .pag-nav { padding: 0 10px; }
+    }
+    @media (min-width: 769px) {
+      .modal-bg { align-items: center; padding: 20px; }
+      .modal { border-radius: 20px; }
+      .modal-btns { flex-direction: row; justify-content: flex-end; }
+      .modal-btns .btn { min-width: 130px; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login">
+  <div class="login-logo"><h2 style="font-size:22px">🎱 Bingo — Cámara de Comercio</h2><p style="opacity:.7;margin-top:6px">Panel administrativo</p></div>
+  <div class="login-card">
+    <h2>Acceso al panel</h2>
+    <p>Ingresa con tu cuenta de administrador</p>
+    <label class="login-label">Correo electrónico</label>
+    <input type="email" id="clave-email" class="login-input" placeholder="tu@correo.com" autocomplete="username">
+    <label class="login-label">Contraseña</label>
+    <input type="password" id="clave-pass" class="login-input" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
+    <button class="login-btn" id="btn-login" onclick="entrar()">Ingresar al Panel</button>
+    <div class="login-error" id="err-login"></div>
+  </div>
+  <div class="login-footer">v1.0 — Supabase + GitHub Pages</div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+  <div class="topbar-movil">
+    <button class="btn-menu" onclick="toggleSidebar()">☰</button>
+    <div><div class="titulo" id="panel-titulo-movil">Dashboard</div><div class="subtitulo">Bingo Cámara de Comercio</div></div>
+    <div style="width:24px"></div>
+  </div>
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <div class="layout">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo"><h2>🎱 Bingo Admin</h2><p id="lbl-usuario">Cámara de Comercio de Arauca</p></div>
+      <div class="sidebar-menu">
+        <div class="menu-item activo" onclick="irA('dashboard','Dashboard')">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Dashboard
+        </div>
+        <div class="menu-item" onclick="irA('entregas','Entregas')">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>Entregas
+        </div>
+        <div class="menu-item" onclick="irA('empresas','Empresas')">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></span>Empresas
+        </div>
+        <div class="menu-item" onclick="irA('enlaces','Enlaces')">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></span>Enlaces
+        </div>
+      </div>
+      <div style="padding:14px 22px"><button class="btn btn-gray btn-full" onclick="cerrarSesion()">Cerrar sesión</button></div>
+      <div class="sidebar-foot">v1.0 — Supabase + GitHub Pages</div>
+    </div>
+
+    <div class="main">
+
+      <!-- ═══ DASHBOARD ═══ -->
+      <div class="panel activo" id="panel-dashboard">
+        <div class="page-top">
+          <div><h1>Dashboard</h1><p>Actualización en tiempo real · Supabase Realtime</p></div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span class="refresh-badge"><span class="refresh-dot"></span>En línea</span>
+            <button class="btn btn-p btn-sm" onclick="fetchDashboardData()">Actualizar</button>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-val" id="s-emp">–</div><div class="stat-lbl">Empresas</div></div>
+          <div class="stat"><div class="stat-val" id="s-entregas">–</div><div class="stat-lbl">Entregas registradas</div></div>
+          <div class="stat"><div class="stat-val" id="s-cartones">–</div><div class="stat-lbl">Cartones entregados</div></div>
+          <div class="stat"><div class="stat-val" id="s-bingos">–</div><div class="stat-lbl">Bingos entregados</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Resumen por empresa</h3></div>
+          <div class="spin-wrap" id="spin-dash"><span class="spin"></span>Cargando…</div>
+          <div class="vacio" id="vacio-dash" style="display:none">No hay empresas registradas aún</div>
+          <div class="tabla-scroll">
+            <table id="t-dash" style="display:none">
+              <thead><tr><th>#</th><th>Empresa</th><th>Entregas</th><th>Cartones</th><th>Bingos entregados</th></tr></thead>
+              <tbody id="tb-dash"></tbody>
+            </table>
+          </div>
+          <div class="lista-m" id="lm-dash"></div>
+        </div>
+      </div>
+
+      <!-- ═══ ENTREGAS ═══ -->
+      <div class="panel" id="panel-entregas">
+        <div class="page-top"><div><h1>Entregas</h1><p>Historial de entregas reportadas por cada empresa</p></div></div>
+        <div class="card">
+          <div class="controles">
+            <select id="fil-emp-entregas" onchange="filtrarEntregas()"><option value="">Todas las empresas</option></select>
+            <button class="btn btn-gray" onclick="exportarCSV()" id="btn-exportar">⬇ Exportar CSV</button>
+          </div>
+          <div class="spin-wrap" id="spin-entregas"><span class="spin"></span>Cargando…</div>
+          <div class="vacio" id="vacio-entregas" style="display:none">No hay entregas registradas</div>
+          <div class="tabla-scroll tabla-box">
+            <table id="t-entregas" style="display:none">
+              <thead><tr><th>#</th><th>Empresa</th><th>Cartón desde</th><th>Cartón hasta</th><th>Cartones</th><th>Bingos</th><th>Fecha</th></tr></thead>
+              <tbody id="tb-entregas"></tbody>
+            </table>
+          </div>
+          <div class="lista-m" id="lm-entregas"></div>
+          <div id="pag-entregas"></div>
+        </div>
+      </div>
+
+      <!-- ═══ EMPRESAS ═══ -->
+      <div class="panel" id="panel-empresas">
+        <div class="page-top"><div><h1>Empresas</h1><p>Las empresas que venden bingo y su enlace de reporte</p></div></div>
+
+        <div class="form-card">
+          <div class="form-card-toggle" id="toggle-nueva-empresa" onclick="toggleFormEmpresa()">
+            <h3>Registrar nueva empresa</h3>
+            <div class="toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+          </div>
+          <div class="form-card-body" id="body-nueva-empresa">
+            <div class="fg"><label>NIT / Identificación</label><input type="text" id="e-nit" placeholder="900123456"></div>
+            <div class="fg"><label>Nombre de la empresa</label><input type="text" id="e-nombre" placeholder="Nombre comercial"></div>
+            <button class="btn btn-p btn-full" onclick="crearEmpresa()">Registrar empresa</button>
+            <div class="fmsg" id="msg-emp"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="controles"><input type="text" id="buscar-emp" placeholder="Buscar por nombre, NIT o código…" oninput="filtrarEmpresas()"></div>
+          <div class="spin-wrap" id="spin-emp"><span class="spin"></span>Cargando…</div>
+          <div class="vacio" id="vacio-emp" style="display:none">No hay empresas registradas</div>
+          <div class="tabla-scroll">
+            <table id="t-emp" style="display:none">
+              <thead><tr><th>#</th><th>Código</th><th>NIT</th><th>Nombre</th><th>Entregas</th><th>Cartones</th><th>Bingos</th><th></th></tr></thead>
+              <tbody id="tb-emp"></tbody>
+            </table>
+          </div>
+          <div class="lista-m" id="lm-emp"></div>
+          <div id="pag-emp"></div>
+        </div>
+      </div>
+
+      <!-- ═══ ENLACES ═══ -->
+      <div class="panel" id="panel-enlaces">
+        <div class="page-top">
+          <div><h1>Enlaces</h1><p>Comparte con cada empresa su enlace de reporte de entregas</p></div>
+          <button class="btn btn-p" onclick="copiarTodos()">Copiar todos</button>
+        </div>
+        <div class="card">
+          <div class="controles"><input type="text" id="buscar-enlace" placeholder="Buscar empresa…" oninput="filtrarEnlaces()"></div>
+          <div class="spin-wrap" id="spin-enl"><span class="spin"></span>Cargando…</div>
+          <div class="vacio" id="vacio-enl" style="display:none">No hay empresas registradas</div>
+          <div class="tabla-scroll">
+            <table id="t-enl" style="display:none">
+              <thead><tr><th>#</th><th>Empresa</th><th>Código</th><th>Enlace</th><th></th></tr></thead>
+              <tbody id="tb-enl"></tbody>
+            </table>
+          </div>
+          <div class="lista-m" id="lm-enl"></div>
+          <div id="pag-enl"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL editar empresa ═══ -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Editar empresa</h3>
+    <div class="modal-id" id="modal-id"></div>
+    <input type="hidden" id="m-id">
+    <div class="fg"><label>NIT / Identificación</label><input type="text" id="m-nit"></div>
+    <div class="fg"><label>Nombre</label><input type="text" id="m-nombre"></div>
+    <div class="fmsg" id="msg-modal"></div>
+    <div class="modal-btns">
+      <button class="btn btn-gray" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="guardarEmpresa()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  const SUPABASE_URL = "https://eugqcnqooypgxysoudaz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1Z3FjbnFvb3lwZ3h5c291ZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODE5NTgsImV4cCI6MjEwMDY1Nzk1OH0.VnH8U_Dm29mutMG8D4Eibp9er2bqXcGcvS1ix-cVaiA";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Ajusta esta ruta si tu carpeta de GitHub Pages para el bingo es distinta
+  const BASE = "https://sistemacca.github.io/semana-comercial-arauca/entrega.html?empresa=";
+
+  const capitalize = str => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : str;
+  const esc = s => String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+  let emps = [], resumen = {}, empsMap = {}, inactividadTimer = null;
+  const INACTIVIDAD_MS = 15 * 60 * 1000;
+  let _channel = null, _cacheListo = false;
+
+  function resetInactividad() {
+    clearTimeout(inactividadTimer);
+    inactividadTimer = setTimeout(() => { cerrarSesion(); document.getElementById("err-login").textContent = "Sesión cerrada por inactividad"; }, INACTIVIDAD_MS);
+  }
+  ["click","keydown","touchstart","scroll","mousemove"].forEach(ev => document.addEventListener(ev, resetInactividad, { passive: true }));
+
+  function genCodigo() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let c = ""; for (let i=0;i<8;i++) c += chars[Math.floor(Math.random()*chars.length)];
+    return c;
+  }
+  function genCodigoUnico(usadosArr) {
+    const usados = new Set(usadosArr); let c;
+    do { c = genCodigo(); } while (usados.has(c));
+    return c;
+  }
+
+  let loginBloqueado = false, loginIntentos = 0;
+  const MAX_INTENTOS = 5, BLOQUEO_MS = 30000;
+
+  // ── AUTENTICACIÓN ────────────────────────────────────────────────────────
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) {
+      document.getElementById("login").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      document.getElementById("lbl-usuario").textContent = session.user.email;
+      iniciarListeners();
+      resetInactividad();
+    } else {
+      detenerListeners(); clearTimeout(inactividadTimer);
+      document.getElementById("app").style.display = "none";
+      document.getElementById("login").style.display = "flex";
+    }
+  });
+
+  window.entrar = async () => {
+    if (loginBloqueado) return;
+    const email = document.getElementById("clave-email").value.trim();
+    const pass  = document.getElementById("clave-pass").value;
+    const errEl = document.getElementById("err-login");
+    const btn   = document.getElementById("btn-login");
+    if (!email || !pass) { errEl.textContent = "Completa email y contraseña"; return; }
+    btn.disabled = true; btn.textContent = "Verificando…"; errEl.textContent = "";
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (!error) { loginIntentos = 0; }
+    else {
+      loginIntentos++;
+      if (loginIntentos >= MAX_INTENTOS) {
+        loginBloqueado = true; errEl.textContent = "Demasiados intentos. Espera 30 segundos."; btn.textContent = "Bloqueado…";
+        setTimeout(() => { loginBloqueado=false; loginIntentos=0; btn.disabled=false; btn.textContent="Ingresar al Panel"; errEl.textContent=""; }, BLOQUEO_MS);
+      } else {
+        const r = MAX_INTENTOS - loginIntentos;
+        errEl.textContent = "Credenciales incorrectas (" + r + " intento" + (r!==1?"s":"") + " restante" + (r!==1?"s":"") + ")";
+        btn.disabled = false; btn.textContent = "Ingresar al Panel";
+      }
+    }
+  };
+
+  window.cerrarSesion = async () => { detenerListeners(); clearTimeout(inactividadTimer); await supabase.auth.signOut(); };
+
+  window.irA = (panel, nombre) => {
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("activo"));
+    document.querySelectorAll(".menu-item").forEach(m => m.classList.remove("activo"));
+    document.getElementById("panel-" + panel).classList.add("activo");
+    document.querySelectorAll(".menu-item").forEach(m => { if (m.getAttribute("onclick").includes("'" + panel + "'")) m.classList.add("activo"); });
+    document.getElementById("panel-titulo-movil").textContent = nombre;
+    document.getElementById("sidebar").classList.remove("abierto");
+    document.getElementById("overlay").classList.remove("visible");
+    if (panel === "entregas") cargarEntregas();
+    if (panel === "empresas") cargarEmpresas();
+    if (panel === "enlaces")  cargarEnlaces();
+  };
+
+  window.toggleSidebar = () => { document.getElementById("sidebar").classList.toggle("abierto"); document.getElementById("overlay").classList.toggle("visible"); };
+
+  // ── DASHBOARD (Realtime) ────────────────────────────────────────────────
+  async function fetchDashboardData() {
+    try {
+      const [{ data: eData, error: e1 }, { data: rData, error: e2 }] = await Promise.all([
+        supabase.from("empresas_bingo").select("*"),
+        supabase.from("resumen_bingo").select("*")
+      ]);
+      if (e1) throw e1; if (e2) throw e2;
+      emps = eData || [];
+      resumen = {};
+      (rData||[]).forEach(r => { resumen[r.empresa_codigo] = r; });
+      empsMap = {}; emps.forEach(e => { empsMap[e.codigo] = e.nombre || e.codigo; });
+      _cacheListo = true;
+      renderDashboard();
+    } catch(e) {
+      console.error(e);
+      document.getElementById("spin-dash").innerHTML = "<p style='color:var(--rojo)'>Error al cargar. Reintentando...</p>";
+    }
+  }
+
+  function iniciarListeners() {
+    if (_channel) return;
+    _channel = supabase.channel("admin-bingo-dashboard")
+      .on("postgres_changes", { event:"*", schema:"public", table:"empresas_bingo" }, fetchDashboardData)
+      .on("postgres_changes", { event:"*", schema:"public", table:"entregas_bingo" }, fetchDashboardData)
+      .subscribe();
+    fetchDashboardData();
+  }
+  function detenerListeners() { if (_channel) { supabase.removeChannel(_channel); _channel = null; } _cacheListo = false; }
+
+  function renderDashboard() {
+    if (!_cacheListo) return;
+    const totEntregas = Object.values(resumen).reduce((a,r)=>a+(r.total_entregas||0),0);
+    const totCartones  = Object.values(resumen).reduce((a,r)=>a+(r.total_cartones||0),0);
+    const totBingos    = Object.values(resumen).reduce((a,r)=>a+(r.total_bingos||0),0);
+    document.getElementById("s-emp").textContent = emps.length;
+    document.getElementById("s-entregas").textContent = totEntregas;
+    document.getElementById("s-cartones").textContent = totCartones;
+    document.getElementById("s-bingos").textContent = totBingos;
+
+    const sorted = [...emps].sort((a,b)=>capitalize(a.nombre||a.codigo).localeCompare(capitalize(b.nombre||b.codigo)));
+    const tbody = document.getElementById("tb-dash"); tbody.innerHTML = "";
+    const lm = document.getElementById("lm-dash"); lm.innerHTML = "";
+    sorted.forEach((e,i) => {
+      const r = resumen[e.codigo] || { total_entregas:0, total_cartones:0, total_bingos:0 };
+      const nombre = capitalize(e.nombre||e.codigo);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><span class="row-num">${i+1}</span></td><td><strong style="color:var(--azul)">${esc(nombre)}</strong></td><td>${r.total_entregas||0}</td><td>${r.total_cartones||0}</td><td><span class="badge-b">${r.total_bingos||0}</span></td>`;
+      tbody.appendChild(tr);
+      const d = document.createElement("div"); d.className="row-m";
+      d.innerHTML = `<div class="row-m-top"><div><div class="row-m-nombre">${nombre}</div><div class="row-m-meta">${r.total_entregas||0} entregas · ${r.total_cartones||0} cartones</div></div><span class="badge-b">${r.total_bingos||0}</span></div>`;
+      lm.appendChild(d);
+    });
+    document.getElementById("spin-dash").style.display = "none";
+    document.getElementById("vacio-dash").style.display = sorted.length===0 ? "block" : "none";
+    if (window.innerWidth > 768)  document.getElementById("t-dash").style.display = sorted.length>0 ? "table" : "none";
+  }
+
+  // ── ENTREGAS ─────────────────────────────────────────────────────────────
+  let entFiltroEmp = "", entCache = [], entTotal = 0, entPagina = 1;
+  const ENT_POR_PAG = 50;
+
+  function poblarFiltroEntregas() {
+    const sel = document.getElementById("fil-emp-entregas");
+    const act = sel.value;
+    sel.innerHTML = '<option value="">Todas las empresas</option>';
+    Object.keys(empsMap).sort((a,b)=>empsMap[a].localeCompare(empsMap[b])).forEach(id => {
+      const o = document.createElement("option"); o.value=id; o.textContent=empsMap[id]; sel.appendChild(o);
+    });
+    sel.value = act;
+  }
+
+  window.cargarEntregas = async () => {
+    if (Object.keys(empsMap).length === 0) {
+      const { data } = await supabase.from("empresas_bingo").select("codigo,nombre");
+      (data||[]).forEach(e => { empsMap[e.codigo] = e.nombre || e.codigo; });
+    }
+    poblarFiltroEntregas();
+    await fetchEntregasPagina(1);
+  };
+
+  window.filtrarEntregas = () => { entFiltroEmp = document.getElementById("fil-emp-entregas").value; fetchEntregasPagina(1); };
+
+  async function fetchEntregasPagina(pg) {
+    document.getElementById("spin-entregas").style.display = "block";
+    document.getElementById("t-entregas").style.display = "none";
+    document.getElementById("lm-entregas").innerHTML = "";
+    document.getElementById("vacio-entregas").style.display = "none";
+    try {
+      let q = supabase.from("entregas_bingo").select("*", { count: "exact" });
+      if (entFiltroEmp) q = q.eq("empresa_codigo", entFiltroEmp);
+      q = q.order("fecha", { ascending:false }).range((pg-1)*ENT_POR_PAG, pg*ENT_POR_PAG-1);
+      const { data, count, error } = await q;
+      if (error) throw error;
+      entCache = data || []; entTotal = count || 0; entPagina = pg;
+      renderEntregas();
+    } catch(e) { document.getElementById("spin-entregas").innerHTML = "<p style='color:var(--rojo)'>Error: "+e.message+"</p>"; }
+  }
+
+  function renderEntregas() {
+    const isMobile = window.innerWidth <= 768;
+    document.getElementById("spin-entregas").style.display = "none";
+    document.getElementById("vacio-entregas").style.display = entTotal===0 ? "block" : "none";
+    document.getElementById("t-entregas").style.display = (entTotal>0 && !isMobile) ? "table" : "none";
+    const tbody = document.getElementById("tb-entregas"); tbody.innerHTML = "";
+    const inicio = (entPagina-1)*ENT_POR_PAG;
+    entCache.forEach((r,i) => {
+      const fecha = r.fecha ? new Date(r.fecha).toLocaleString("es-CO",{dateStyle:"short",timeStyle:"short"}) : "";
+      const cartones = Number(r.carton_hasta) - Number(r.carton_desde) + 1;
+      const nombreEmp = empsMap[r.empresa_codigo] || r.empresa_codigo;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><span class="row-num">${inicio+i+1}</span></td><td><span class="badge-e">${esc(nombreEmp)}</span></td><td>${r.carton_desde}</td><td>${r.carton_hasta}</td><td>${cartones}</td><td><span class="badge-b">${r.cantidad_bingos}</span></td><td style="color:var(--sub);font-size:12px">${fecha}</td>`;
+      tbody.appendChild(tr);
+    });
+    const lm = document.getElementById("lm-entregas"); lm.innerHTML = "";
+    if (isMobile) {
+      entCache.forEach(r => {
+        const fecha = r.fecha ? new Date(r.fecha).toLocaleString("es-CO",{dateStyle:"short",timeStyle:"short"}) : "";
+        const cartones = Number(r.carton_hasta) - Number(r.carton_desde) + 1;
+        const nombreEmp = empsMap[r.empresa_codigo] || r.empresa_codigo;
+        const d = document.createElement("div"); d.className="row-m";
+        d.innerHTML = `<div class="row-m-top"><div><div class="row-m-nombre">${esc(nombreEmp)}</div><div class="row-m-meta">Cartones ${r.carton_desde}–${r.carton_hasta} (${cartones}) · ${fecha}</div></div><span class="badge-b">${r.cantidad_bingos}</span></div>`;
+        lm.appendChild(d);
+      });
+    }
+    buildPaginator("pag-entregas", entTotal, entPagina, ENT_POR_PAG, (pg)=>{ fetchEntregasPagina(pg); window.scrollTo({top:0,behavior:"smooth"}); });
+  }
+
+  window.exportarCSV = async () => {
+    const btn = document.getElementById("btn-exportar");
+    btn.disabled = true; const txtOrig = btn.innerHTML; btn.innerHTML = "⏳ Preparando…";
+    try {
+      let offset = 0, filas = [];
+      while (true) {
+        let q = supabase.from("entregas_bingo").select("*");
+        if (entFiltroEmp) q = q.eq("empresa_codigo", entFiltroEmp);
+        q = q.order("fecha",{ascending:false}).range(offset, offset+999);
+        const { data, error } = await q; if (error) throw error;
+        if (!data || data.length===0) break;
+        data.forEach(r => {
+          const fecha = r.fecha ? new Date(r.fecha).toLocaleString("es-CO") : "";
+          const cartones = Number(r.carton_hasta)-Number(r.carton_desde)+1;
+          filas.push([empsMap[r.empresa_codigo]||r.empresa_codigo, r.carton_desde, r.carton_hasta, cartones, r.cantidad_bingos, fecha]);
+        });
+        if (data.length < 1000) break;
+        offset += 1000;
+      }
+      if (filas.length===0) { btn.innerHTML="⚠️ Sin resultados"; setTimeout(()=>{btn.disabled=false;btn.innerHTML=txtOrig;},2000); return; }
+      const toCSV = arr => arr.map(v=>JSON.stringify(v==null?'':String(v))).join(',');
+      let csv = "Empresa,Carton Desde,Carton Hasta,Cantidad Cartones,Bingos Entregados,Fecha\n";
+      filas.forEach(f => { csv += toCSV(f)+"\n"; });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"}));
+      a.download = "entregas-bingo-"+new Date().toISOString().slice(0,10)+".csv";
+      a.click(); URL.revokeObjectURL(a.href);
+      btn.innerHTML = "✅ "+filas.length+" filas"; setTimeout(()=>{btn.disabled=false;btn.innerHTML=txtOrig;},3000);
+    } catch(e) { console.error(e); btn.innerHTML="❌ Error"; setTimeout(()=>{btn.disabled=false;btn.innerHTML=txtOrig;},3000); }
+  };
+
+  // ── PAGINACIÓN GENÉRICA ──────────────────────────────────────────────────
+  function buildPaginator(containerId, total, pagActual, porPagina, onIr) {
+    const pag = document.getElementById(containerId);
+    const totalPag = Math.ceil(total/porPagina);
+    const inicio = (pagActual-1)*porPagina, fin = Math.min(inicio+porPagina, total);
+    pag.style.display = total > porPagina ? "block" : "none";
+    if (total <= porPagina) return;
+    pag.innerHTML = "";
+    const wrap = document.createElement("div"); wrap.className = "pag-container";
+    const meta = document.createElement("div"); meta.className = "pag-meta";
+    meta.innerHTML = `<b>${inicio+1}–${fin}</b> de <b>${total}</b> &nbsp;|&nbsp; Página <b>${pagActual}</b> de <b>${totalPag}</b>`;
+    wrap.appendChild(meta);
+    const ctrl = document.createElement("div"); ctrl.className = "pag-controls";
+    const mkNav = (html, disabled, cb) => { const b=document.createElement("button"); b.className="pag-nav"; b.innerHTML=html; b.disabled=disabled; b.onclick=cb; ctrl.appendChild(b); };
+    mkNav("« Anterior", pagActual===1, ()=>onIr(pagActual-1));
+    let lastP = 0;
+    for (let p=1; p<=totalPag; p++) {
+      if (p===1||p===totalPag||(p>=pagActual-2&&p<=pagActual+2)) {
+        if (lastP && p-lastP>1) { const d=document.createElement("span"); d.className="pag-dots-span"; d.textContent="···"; ctrl.appendChild(d); }
+        const b=document.createElement("button"); b.className="pag-num"+(p===pagActual?" on":""); b.textContent=p; b.onclick=((pgp)=>()=>onIr(pgp))(p);
+        ctrl.appendChild(b); lastP=p;
+      }
+    }
+    mkNav("Siguiente »", pagActual===totalPag, ()=>onIr(pagActual+1));
+    wrap.appendChild(ctrl); pag.appendChild(wrap);
+  }
+
+  // ── EMPRESAS ──────────────────────────────────────────────────────────────
+  let empsCache = [], empsTodos = [], empsPagActual = 1;
+  const EMPS_POR_PAG = 20;
+
+  window.filtrarEmpresas = () => {
+    const q = document.getElementById("buscar-emp").value.toLowerCase();
+    empsCache = q ? empsTodos.filter(e => (e.nombre||"").toLowerCase().includes(q) || (e.nit||"").includes(q) || (e.codigo||"").toLowerCase().includes(q)) : [...empsTodos];
+    empsPagActual = 1; renderEmpresas();
+  };
+
+  window.cargarEmpresas = async () => {
+    document.getElementById("spin-emp").style.display = "block";
+    document.getElementById("t-emp").style.display = "none";
+    try {
+      const [{ data: eData, error: e1 }, { data: rData, error: e2 }] = await Promise.all([
+        supabase.from("empresas_bingo").select("*"),
+        supabase.from("resumen_bingo").select("*")
+      ]);
+      if (e1) throw e1; if (e2) throw e2;
+      emps = eData || [];
+      resumen = {}; (rData||[]).forEach(r => { resumen[r.empresa_codigo] = r; });
+      emps.sort((a,b)=>capitalize(a.nombre||a.codigo).localeCompare(capitalize(b.nombre||b.codigo)));
+      empsTodos = emps; empsCache = [...emps]; empsPagActual = 1;
+      renderEmpresas();
+    } catch(e) { console.error(e); document.getElementById("spin-emp").innerHTML="<p style='color:var(--rojo)'>Error al cargar</p>"; }
+  };
+
+  function renderEmpresas() {
+    const isMobile = window.innerWidth <= 768;
+    const total = empsCache.length, inicio=(empsPagActual-1)*EMPS_POR_PAG, fin=Math.min(inicio+EMPS_POR_PAG,total);
+    const pagina = empsCache.slice(inicio, fin);
+    document.getElementById("spin-emp").style.display = "none";
+    document.getElementById("vacio-emp").style.display = total===0 ? "block" : "none";
+    document.getElementById("t-emp").style.display = (total>0 && !isMobile) ? "table" : "none";
+    const tbody = document.getElementById("tb-emp"); tbody.innerHTML = "";
+    pagina.forEach((e,i) => {
+      const r = resumen[e.codigo] || { total_entregas:0, total_cartones:0, total_bingos:0 };
+      const nombreMostrar = capitalize(e.nombre||e.codigo);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><span class="row-num">${inicio+i+1}</span></td>
+        <td><span style="font-family:monospace;background:#e6f4ec;color:#005a30;padding:3px 10px;border-radius:8px;font-weight:700;font-size:12px">${e.codigo}</span></td>
+        <td><span style="font-family:monospace;font-size:12px">${esc(e.nit||'—')}</span></td>
+        <td><strong style="color:var(--azul)">${esc(nombreMostrar)}</strong></td>
+        <td>${r.total_entregas||0}</td><td>${r.total_cartones||0}</td><td><span class="badge-b">${r.total_bingos||0}</span></td>
+        <td><button class="btn btn-p btn-sm" onclick="abrirModal('${e.codigo}','${nombreMostrar.replace(/'/g,"\\'")}')">Editar</button></td>`;
+      tbody.appendChild(tr);
+    });
+    const lm = document.getElementById("lm-emp"); lm.innerHTML = "";
+    if (isMobile) {
+      pagina.forEach(e => {
+        const r = resumen[e.codigo] || { total_entregas:0, total_cartones:0, total_bingos:0 };
+        const nombreMovil = capitalize(e.nombre||e.codigo);
+        const d = document.createElement("div"); d.className="row-m";
+        d.innerHTML = `<div class="row-m-top"><div><div class="row-m-nombre">${nombreMovil}</div><div class="row-m-meta">${e.codigo} · NIT ${e.nit||'—'} · ${r.total_entregas||0} entregas</div></div><button class="btn btn-p btn-sm" onclick="abrirModal('${e.codigo}','${nombreMovil.replace(/'/g,"\\'")}')">Editar</button></div>`;
+        lm.appendChild(d);
+      });
+    }
+    buildPaginator("pag-emp", total, empsPagActual, EMPS_POR_PAG, (pg)=>{ empsPagActual=pg; renderEmpresas(); });
+  }
+
+  window.crearEmpresa = async () => {
+    const nit = document.getElementById("e-nit").value.trim().replace(/\D/g,"");
+    const _n = document.getElementById("e-nombre").value.trim();
+    const nombre = _n ? _n.charAt(0).toUpperCase()+_n.slice(1).toLowerCase() : _n;
+    const msg = document.getElementById("msg-emp"); msg.style.display = "none";
+    if (!nombre) { msg.textContent="Ingresa el nombre de la empresa"; msg.className="fmsg error"; msg.style.display="block"; return; }
+    try {
+      if (empsTodos.length === 0) { const { data } = await supabase.from("empresas_bingo").select("*"); empsTodos = data || []; }
+      const codigo = genCodigoUnico(empsTodos.map(e=>e.codigo));
+      const { error } = await supabase.from("empresas_bingo").insert({ nit, nombre, codigo });
+      if (error) throw error;
+      msg.textContent = "Registro exitoso"; msg.className="fmsg ok"; msg.style.display="block";
+      setTimeout(()=>{ msg.style.display="none"; document.getElementById("toggle-nueva-empresa").classList.remove("abierto"); document.getElementById("body-nueva-empresa").classList.remove("abierto"); }, 1400);
+      ["e-nit","e-nombre"].forEach(f=>document.getElementById(f).value="");
+      cargarEmpresas();
+    } catch(e) { msg.textContent="Error: "+e.message; msg.className="fmsg error"; msg.style.display="block"; }
+  };
+
+  window.abrirModal = (codigo, nombre) => {
+    const empData = empsTodos.find(e => e.codigo === codigo) || {};
+    document.getElementById("m-id").value = codigo;
+    document.getElementById("m-nit").value = empData.nit || "";
+    document.getElementById("m-nombre").value = nombre;
+    document.getElementById("modal-id").textContent = "Código: " + codigo;
+    document.getElementById("msg-modal").style.display = "none";
+    document.getElementById("modal").classList.add("visible");
+  };
+  window.cerrarModal = () => { document.getElementById("modal").classList.remove("visible"); };
+
+  window.guardarEmpresa = async () => {
+    const codigo = document.getElementById("m-id").value;
+    const nit = document.getElementById("m-nit").value.trim().replace(/\D/g,"");
+    const _n2 = document.getElementById("m-nombre").value.trim();
+    const nombre = _n2 ? _n2.charAt(0).toUpperCase()+_n2.slice(1).toLowerCase() : _n2;
+    const msg = document.getElementById("msg-modal"); msg.style.display = "none";
+    if (!nombre) { msg.textContent="El nombre no puede quedar vacío"; msg.className="fmsg error"; msg.style.display="block"; return; }
+    try {
+      const { error } = await supabase.from("empresas_bingo").update({ nit, nombre }).eq("codigo", codigo);
+      if (error) throw error;
+      msg.textContent = "✅ Cambios guardados"; msg.className="fmsg ok"; msg.style.display="block";
+      setTimeout(()=>{ cerrarModal(); cargarEmpresas(); fetchDashboardData(); }, 1000);
+    } catch(e) { msg.textContent="Error: "+e.message; msg.className="fmsg error"; msg.style.display="block"; }
+  };
+
+  // ── ENLACES ───────────────────────────────────────────────────────────────
+  let enlCache = [], enlPagActual = 1;
+  const ENL_POR_PAG = 20;
+
+  window.cargarEnlaces = async () => {
+    document.getElementById("spin-enl").style.display = "block";
+    try {
+      const { data, error } = await supabase.from("empresas_bingo").select("*");
+      if (error) throw error;
+      emps = data || [];
+      emps.sort((a,b)=>capitalize(a.nombre||a.codigo).localeCompare(capitalize(b.nombre||b.codigo)));
+      enlCache = emps; enlPagActual = 1; renderEnlaces();
+    } catch(e) { document.getElementById("spin-enl").innerHTML="<p style='color:var(--rojo)'>Error al cargar</p>"; }
+  };
+
+  window.filtrarEnlaces = () => {
+    const q = document.getElementById("buscar-enlace").value.toLowerCase();
+    enlCache = emps.filter(e => (e.nombre||e.codigo).toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q));
+    enlPagActual = 1; renderEnlaces();
+  };
+
+  function renderEnlaces() {
+    const isMobile = window.innerWidth <= 768;
+    const total = enlCache.length, inicio=(enlPagActual-1)*ENL_POR_PAG, fin=Math.min(inicio+ENL_POR_PAG,total);
+    const pagina = enlCache.slice(inicio, fin);
+    document.getElementById("spin-enl").style.display = "none";
+    document.getElementById("vacio-enl").style.display = total===0 ? "block" : "none";
+    document.getElementById("t-enl").style.display = (total>0 && !isMobile) ? "table" : "none";
+    const tbody = document.getElementById("tb-enl"); tbody.innerHTML = "";
+    pagina.forEach((e,i) => {
+      const url = BASE + encodeURIComponent(e.codigo);
+      const nombreEnl = capitalize(e.nombre||e.codigo);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><span class="row-num">${inicio+i+1}</span></td><td><strong style="color:var(--azul)">${esc(nombreEnl)}</strong></td><td><span style="font-family:monospace;background:#e6f4ec;color:#005a30;padding:3px 10px;border-radius:8px;font-weight:700;font-size:13px">${e.codigo}</span></td><td style="max-width:260px"><span title="${url}" style="display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;background:#f8fafc;padding:6px 10px;border-radius:8px;color:var(--sub)">${url}</span></td><td><button class="btn btn-p btn-sm" onclick="copiarEnlace(this,'${url}')">Copiar</button></td>`;
+      tbody.appendChild(tr);
+    });
+    const lm = document.getElementById("lm-enl"); lm.innerHTML = "";
+    if (isMobile) {
+      pagina.forEach(e => {
+        const url = BASE + encodeURIComponent(e.codigo);
+        const nombreEnlM = capitalize(e.nombre||e.codigo);
+        const d = document.createElement("div"); d.className="row-m";
+        d.innerHTML = `<div class="row-m-top"><div><div class="row-m-nombre" style="color:var(--azul)">${nombreEnlM}</div><div class="row-m-meta">Código: ${e.codigo}</div></div><button class="btn btn-p btn-sm" onclick="copiarEnlace(this,'${url}')">Copiar</button></div><div style="font-size:11px;word-break:break-all;background:#f8fafc;padding:6px 10px;border-radius:8px;margin-top:8px;color:var(--sub)">${url}</div>`;
+        lm.appendChild(d);
+      });
+    }
+    buildPaginator("pag-enl", total, enlPagActual, ENL_POR_PAG, (pg)=>{ enlPagActual=pg; renderEnlaces(); });
+  }
+
+  window.copiarEnlace = (btn, url) => {
+    navigator.clipboard.writeText(url).then(()=>{ btn.textContent="✓ Copiado"; setTimeout(()=>{ btn.textContent="Copiar"; }, 2000); });
+  };
+
+  window.toggleFormEmpresa = () => {
+    const toggle = document.getElementById("toggle-nueva-empresa");
+    const body = document.getElementById("body-nueva-empresa");
+    toggle.classList.toggle("abierto");
+    body.classList.toggle("abierto", toggle.classList.contains("abierto"));
+  };
+
+  window.copiarTodos = () => {
+    const txt = emps.map(e => (e.nombre||e.codigo) + ": " + BASE + encodeURIComponent(e.codigo)).join("\n");
+    navigator.clipboard.writeText(txt).then(()=>alert("¡Todos los enlaces copiados!"));
+  };
+</script>
+</body>
+</html>
