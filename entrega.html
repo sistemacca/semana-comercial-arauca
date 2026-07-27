@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Bingo - Cámara de Comercio de Arauca</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #f0f4f8;
+      background-image: url('https://raw.githubusercontent.com/sistemacca/boletas-camara/main/fondo_login.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100%;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 12px;
+      overflow-y: auto;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px 20px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      border-top: 6px solid #007d42;
+    }
+    .logo { text-align: center; margin-bottom: 24px; }
+    .logo h2 { color: #007d42; font-size: 22px; margin-bottom: 4px; }
+    .logo p { font-size: 13px; color: #64748b; }
+    .logo .empresa-nombre {
+      display: inline-block;
+      margin-top: 10px;
+      background: #e6f4ec;
+      color: #007d42;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+    .campo { margin-bottom: 16px; }
+    .fila-doble { display: flex; gap: 12px; }
+    .fila-doble .campo { flex: 1; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #007d42;
+      margin-bottom: 5px;
+    }
+    label span { color: #e11d48; }
+    input[type="number"] {
+      width: 100%;
+      padding: 11px 13px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #007d42;
+      box-shadow: 0 0 0 3px rgba(0,125,66,0.08);
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    input.error { border-color: #e11d48; }
+    .msg-error { font-size: 11px; color: #e11d48; margin-top: 4px; display: none; }
+    .hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+    button#btn {
+      width: 100%;
+      padding: 13px;
+      background: #007d42;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    button#btn:hover:not(:disabled) { background: #005a30; }
+    button#btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .resultado { margin-top: 20px; text-align: center; }
+    .fallo {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+      padding: 12px; color: #991b1b; font-size: 14px;
+    }
+    .exito {
+      background: #e6f4ec; border: 1px solid #a7d7bb; border-radius: 10px;
+      padding: 18px; color: #005a30;
+    }
+    .exito .check {
+      width: 44px; height: 44px; border-radius: 50%; background: #007d42;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;
+    }
+    .exito h3 { font-size: 16px; margin-bottom: 4px; }
+    .exito p { font-size: 13px; color: #005a30; opacity: .85; }
+    .exito .resumen {
+      margin-top: 12px; background: white; border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; text-align: left; color: #334155;
+    }
+    .exito .resumen div { display: flex; justify-content: space-between; padding: 3px 0; }
+    .exito .resumen b { color: #007d42; }
+    .btn-otra {
+      margin-top: 14px; background: none; border: 1.5px solid #007d42; color: #007d42;
+      border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%;
+    }
+    .btn-otra:hover { background: #007d42; color: white; }
+
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid #ffffff55; border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      body { padding: 0; background-attachment: scroll; }
+      .card { max-width: 100%; border-radius: 0; box-shadow: none; padding: 28px 20px; }
+      input[type="number"] { font-size: 16px; }
+      button#btn { font-size: 16px; padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <h2>🎱 Registro de entrega — Bingo</h2>
+    <p>Cámara de Comercio de Arauca</p>
+    <div class="empresa-nombre" id="empresa-label">Cargando...</div>
+  </div>
+
+  <div id="resultado" class="resultado"></div>
+
+  <form id="formulario" style="display:none" onsubmit="return false;">
+    <div class="fila-doble">
+      <div class="campo">
+        <label>Cartón desde <span>*</span></label>
+        <input type="number" id="carton_desde" min="1" placeholder="Ej: 100">
+        <div class="msg-error" id="err-desde">Requerido</div>
+      </div>
+      <div class="campo">
+        <label>Cartón hasta <span>*</span></label>
+        <input type="number" id="carton_hasta" min="1" placeholder="Ej: 150">
+        <div class="msg-error" id="err-hasta">Requerido</div>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Cantidad de bingos entregados <span>*</span></label>
+      <input type="number" id="cantidad_bingos" min="1" placeholder="Ej: 50">
+      <div class="hint">Número total de bingos entregados en esta ronda</div>
+      <div class="msg-error" id="err-cantidad">Requerido</div>
+    </div>
+
+    <button id="btn" onclick="registrar()">Registrar entrega</button>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  const SUPABASE_URL = "https://eugqcnqooypgxysoudaz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1Z3FjbnFvb3lwZ3h5c291ZGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwODE5NTgsImV4cCI6MjEwMDY1Nzk1OH0.VnH8U_Dm29mutMG8D4Eibp9er2bqXcGcvS1ix-cVaiA";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const CODIGO = new URLSearchParams(window.location.search).get("empresa") || "";
+  let NOMBRE_EMPRESA = CODIGO;
+
+  async function cargarEmpresa() {
+    const resultado = document.getElementById("resultado");
+    if (!CODIGO) {
+      document.getElementById("empresa-label").textContent = "Sin empresa";
+      resultado.innerHTML = '<p class="fallo">Enlace sin empresa. Contacta al organizador.</p>';
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("empresas_bingo")
+        .select("codigo, nombre")
+        .eq("codigo", CODIGO)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        document.getElementById("empresa-label").textContent = "No encontrada";
+        resultado.innerHTML = '<p class="fallo">Empresa no registrada. Contacta al organizador.</p>';
+        return;
+      }
+      NOMBRE_EMPRESA = data.nombre || CODIGO;
+      document.getElementById("empresa-label").textContent = NOMBRE_EMPRESA;
+      document.getElementById("formulario").style.display = "block";
+    } catch (e) {
+      resultado.innerHTML = '<p class="fallo">Error al cargar. Intenta de nuevo.</p>';
+      console.error(e);
+    }
+  }
+  cargarEmpresa();
+
+  function limpiarErrores() {
+    ["desde","hasta","cantidad"].forEach(f => {
+      document.getElementById("err-"+f).style.display = "none";
+      const campo = f === "desde" ? "carton_desde" : f === "hasta" ? "carton_hasta" : "cantidad_bingos";
+      document.getElementById(campo).classList.remove("error");
+    });
+  }
+
+  function marcarError(campo, elErr, msg) {
+    document.getElementById(campo).classList.add("error");
+    const e = document.getElementById(elErr);
+    e.textContent = msg; e.style.display = "block";
+  }
+
+  window.registrar = async () => {
+    limpiarErrores();
+    const desde = document.getElementById("carton_desde").value;
+    const hasta = document.getElementById("carton_hasta").value;
+    const cantidad = document.getElementById("cantidad_bingos").value;
+    const resultado = document.getElementById("resultado");
+
+    let ok = true;
+    if (!desde || Number(desde) < 1) { marcarError("carton_desde","err-desde","Ingresa un número válido"); ok = false; }
+    if (!hasta || Number(hasta) < 1) { marcarError("carton_hasta","err-hasta","Ingresa un número válido"); ok = false; }
+    if (ok && Number(hasta) < Number(desde)) { marcarError("carton_hasta","err-hasta","Debe ser mayor o igual a 'desde'"); ok = false; }
+    if (!cantidad || Number(cantidad) < 1) { marcarError("cantidad_bingos","err-cantidad","Ingresa un número válido"); ok = false; }
+    if (!ok) return;
+
+    const btn = document.getElementById("btn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Registrando...';
+    resultado.innerHTML = "";
+
+    try {
+      const { error } = await supabase.from("entregas_bingo").insert({
+        empresa_codigo:  CODIGO,
+        carton_desde:    Number(desde),
+        carton_hasta:    Number(hasta),
+        cantidad_bingos: Number(cantidad)
+      });
+      if (error) throw error;
+
+      document.getElementById("formulario").style.display = "none";
+      resultado.innerHTML = `
+        <div class="exito">
+          <div class="check">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h3>Entrega registrada</h3>
+          <p>${NOMBRE_EMPRESA}</p>
+          <div class="resumen">
+            <div><span>Cartones</span><b>${desde} – ${hasta}</b></div>
+            <div><span>Bingos entregados</span><b>${cantidad}</b></div>
+          </div>
+        </div>
+        <button class="btn-otra" onclick="location.reload()">Registrar otra entrega</button>`;
+    } catch (e) {
+      resultado.innerHTML = '<p class="fallo">Error al registrar. Intenta de nuevo.</p>';
+      console.error(e);
+      btn.disabled = false;
+      btn.innerHTML = "Registrar entrega";
+    }
+  };
+</script>
+</body>
+</html>
