@@ -271,7 +271,7 @@
           <div class="vacio" id="vacio-entregas" style="display:none">No hay entregas registradas</div>
           <div class="tabla-scroll tabla-box">
             <table id="t-entregas" style="display:none">
-              <thead><tr><th>#</th><th>Empresa</th><th>Cartón desde</th><th>Cartón hasta</th><th>Cartones</th><th>Bingos</th><th>Fecha</th></tr></thead>
+              <thead><tr><th>#</th><th>Empresa</th><th>Entregado a</th><th>NIT</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Cartón desde</th><th>Cartón hasta</th><th>Cartones</th><th>Bingos</th><th>Fecha</th></tr></thead>
               <tbody id="tb-entregas"></tbody>
             </table>
           </div>
@@ -290,8 +290,13 @@
             <div class="toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
           </div>
           <div class="form-card-body" id="body-nueva-empresa">
-            <div class="fg"><label>NIT / Identificación</label><input type="text" id="e-nit" placeholder="900123456"></div>
-            <div class="fg"><label>Nombre de la empresa</label><input type="text" id="e-nombre" placeholder="Nombre comercial"></div>
+            <div class="fg"><label>Nombre o razón social</label><input type="text" id="e-nombre" placeholder="Nombre comercial"></div>
+            <div class="f2">
+              <div class="fg"><label>NIT / Identificación</label><input type="text" id="e-nit" placeholder="900123456"></div>
+              <div class="fg"><label>Teléfono</label><input type="text" id="e-telefono" placeholder="3001234567"></div>
+            </div>
+            <div class="fg"><label>Email</label><input type="text" id="e-email" placeholder="correo@empresa.com"></div>
+            <div class="fg"><label>Dirección</label><input type="text" id="e-direccion" placeholder="Dirección"></div>
             <button class="btn btn-p btn-full" onclick="crearEmpresa()">Registrar empresa</button>
             <div class="fmsg" id="msg-emp"></div>
           </div>
@@ -344,8 +349,13 @@
     <h3>Editar empresa</h3>
     <div class="modal-id" id="modal-id"></div>
     <input type="hidden" id="m-id">
-    <div class="fg"><label>NIT / Identificación</label><input type="text" id="m-nit"></div>
     <div class="fg"><label>Nombre</label><input type="text" id="m-nombre"></div>
+    <div class="f2">
+      <div class="fg"><label>NIT / Identificación</label><input type="text" id="m-nit"></div>
+      <div class="fg"><label>Teléfono</label><input type="text" id="m-telefono"></div>
+    </div>
+    <div class="fg"><label>Email</label><input type="text" id="m-email"></div>
+    <div class="fg"><label>Dirección</label><input type="text" id="m-direccion"></div>
     <div class="fmsg" id="msg-modal"></div>
     <div class="modal-btns">
       <button class="btn btn-gray" onclick="cerrarModal()">Cancelar</button>
@@ -556,7 +566,7 @@
       const cartones = Number(r.carton_hasta) - Number(r.carton_desde) + 1;
       const nombreEmp = empsMap[r.empresa_codigo] || r.empresa_codigo;
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td><span class="row-num">${inicio+i+1}</span></td><td><span class="badge-e">${esc(nombreEmp)}</span></td><td>${r.carton_desde}</td><td>${r.carton_hasta}</td><td>${cartones}</td><td><span class="badge-b">${r.cantidad_bingos}</span></td><td style="color:var(--sub);font-size:12px">${fecha}</td>`;
+      tr.innerHTML = `<td><span class="row-num">${inicio+i+1}</span></td><td><span class="badge-e">${esc(nombreEmp)}</span></td><td><strong>${esc(r.receptor_nombre)}</strong></td><td style="font-family:monospace;font-size:12px">${esc(r.receptor_nit||'—')}</td><td>${esc(r.receptor_telefono||'—')}</td><td>${esc(r.receptor_email||'—')}</td><td>${esc(r.receptor_direccion||'—')}</td><td>${r.carton_desde}</td><td>${r.carton_hasta}</td><td>${cartones}</td><td><span class="badge-b">${r.cantidad_bingos}</span></td><td style="color:var(--sub);font-size:12px">${fecha}</td>`;
       tbody.appendChild(tr);
     });
     const lm = document.getElementById("lm-entregas"); lm.innerHTML = "";
@@ -566,7 +576,7 @@
         const cartones = Number(r.carton_hasta) - Number(r.carton_desde) + 1;
         const nombreEmp = empsMap[r.empresa_codigo] || r.empresa_codigo;
         const d = document.createElement("div"); d.className="row-m";
-        d.innerHTML = `<div class="row-m-top"><div><div class="row-m-nombre">${esc(nombreEmp)}</div><div class="row-m-meta">Cartones ${r.carton_desde}–${r.carton_hasta} (${cartones}) · ${fecha}</div></div><span class="badge-b">${r.cantidad_bingos}</span></div>`;
+        d.innerHTML = `<div class="row-m-top"><div><div class="row-m-nombre">${esc(r.receptor_nombre)}</div><div class="row-m-meta">Entregó: ${esc(nombreEmp)} · Cartones ${r.carton_desde}–${r.carton_hasta} (${cartones}) · ${fecha}</div></div><span class="badge-b">${r.cantidad_bingos}</span></div><div class="row-m-meta" style="margin-top:4px">NIT: ${esc(r.receptor_nit||'—')} · ${esc(r.receptor_telefono||'—')}${r.receptor_email?' · '+esc(r.receptor_email):''}${r.receptor_direccion?' · '+esc(r.receptor_direccion):''}</div>`;
         lm.appendChild(d);
       });
     }
@@ -587,14 +597,18 @@
         data.forEach(r => {
           const fecha = r.fecha ? new Date(r.fecha).toLocaleString("es-CO") : "";
           const cartones = Number(r.carton_hasta)-Number(r.carton_desde)+1;
-          filas.push([empsMap[r.empresa_codigo]||r.empresa_codigo, r.carton_desde, r.carton_hasta, cartones, r.cantidad_bingos, fecha]);
+          filas.push([
+            empsMap[r.empresa_codigo]||r.empresa_codigo,
+            r.receptor_nombre, r.receptor_nit||"", r.receptor_telefono||"", r.receptor_email||"", r.receptor_direccion||"",
+            r.carton_desde, r.carton_hasta, cartones, r.cantidad_bingos, fecha
+          ]);
         });
         if (data.length < 1000) break;
         offset += 1000;
       }
       if (filas.length===0) { btn.innerHTML="⚠️ Sin resultados"; setTimeout(()=>{btn.disabled=false;btn.innerHTML=txtOrig;},2000); return; }
       const toCSV = arr => arr.map(v=>JSON.stringify(v==null?'':String(v))).join(',');
-      let csv = "Empresa,Carton Desde,Carton Hasta,Cantidad Cartones,Bingos Entregados,Fecha\n";
+      let csv = "Empresa,Entregado a,NIT,Telefono,Email,Direccion,Carton Desde,Carton Hasta,Cantidad Cartones,Bingos Entregados,Fecha\n";
       filas.forEach(f => { csv += toCSV(f)+"\n"; });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"}));
@@ -693,28 +707,39 @@
   }
 
   window.crearEmpresa = async () => {
-    const nit = document.getElementById("e-nit").value.trim().replace(/\D/g,"");
-    const _n = document.getElementById("e-nombre").value.trim();
-    const nombre = _n ? _n.charAt(0).toUpperCase()+_n.slice(1).toLowerCase() : _n;
+    const nit       = document.getElementById("e-nit").value.trim().replace(/\D/g,"");
+    const _n        = document.getElementById("e-nombre").value.trim();
+    const nombre    = _n ? _n.charAt(0).toUpperCase()+_n.slice(1).toLowerCase() : _n;
+    const telefono  = document.getElementById("e-telefono").value.trim();
+    const email     = document.getElementById("e-email").value.trim();
+    const direccion = document.getElementById("e-direccion").value.trim();
     const msg = document.getElementById("msg-emp"); msg.style.display = "none";
     if (!nombre) { msg.textContent="Ingresa el nombre de la empresa"; msg.className="fmsg error"; msg.style.display="block"; return; }
     try {
       if (empsTodos.length === 0) { const { data } = await supabase.from("empresas_bingo").select("*"); empsTodos = data || []; }
       const codigo = genCodigoUnico(empsTodos.map(e=>e.codigo));
-      const { error } = await supabase.from("empresas_bingo").insert({ nit, nombre, codigo });
+      const { error } = await supabase.from("empresas_bingo").insert({
+        nit, nombre, codigo,
+        telefono:  telefono || null,
+        email:     email || null,
+        direccion: direccion || null
+      });
       if (error) throw error;
       msg.textContent = "Registro exitoso"; msg.className="fmsg ok"; msg.style.display="block";
       setTimeout(()=>{ msg.style.display="none"; document.getElementById("toggle-nueva-empresa").classList.remove("abierto"); document.getElementById("body-nueva-empresa").classList.remove("abierto"); }, 1400);
-      ["e-nit","e-nombre"].forEach(f=>document.getElementById(f).value="");
+      ["e-nit","e-nombre","e-telefono","e-email","e-direccion"].forEach(f=>document.getElementById(f).value="");
       cargarEmpresas();
     } catch(e) { msg.textContent="Error: "+e.message; msg.className="fmsg error"; msg.style.display="block"; }
   };
 
   window.abrirModal = (codigo, nombre) => {
     const empData = empsTodos.find(e => e.codigo === codigo) || {};
-    document.getElementById("m-id").value = codigo;
-    document.getElementById("m-nit").value = empData.nit || "";
-    document.getElementById("m-nombre").value = nombre;
+    document.getElementById("m-id").value        = codigo;
+    document.getElementById("m-nit").value       = empData.nit || "";
+    document.getElementById("m-nombre").value    = nombre;
+    document.getElementById("m-telefono").value  = empData.telefono || "";
+    document.getElementById("m-email").value     = empData.email || "";
+    document.getElementById("m-direccion").value = empData.direccion || "";
     document.getElementById("modal-id").textContent = "Código: " + codigo;
     document.getElementById("msg-modal").style.display = "none";
     document.getElementById("modal").classList.add("visible");
@@ -722,14 +747,22 @@
   window.cerrarModal = () => { document.getElementById("modal").classList.remove("visible"); };
 
   window.guardarEmpresa = async () => {
-    const codigo = document.getElementById("m-id").value;
-    const nit = document.getElementById("m-nit").value.trim().replace(/\D/g,"");
-    const _n2 = document.getElementById("m-nombre").value.trim();
-    const nombre = _n2 ? _n2.charAt(0).toUpperCase()+_n2.slice(1).toLowerCase() : _n2;
+    const codigo    = document.getElementById("m-id").value;
+    const nit       = document.getElementById("m-nit").value.trim().replace(/\D/g,"");
+    const _n2       = document.getElementById("m-nombre").value.trim();
+    const nombre    = _n2 ? _n2.charAt(0).toUpperCase()+_n2.slice(1).toLowerCase() : _n2;
+    const telefono  = document.getElementById("m-telefono").value.trim();
+    const email     = document.getElementById("m-email").value.trim();
+    const direccion = document.getElementById("m-direccion").value.trim();
     const msg = document.getElementById("msg-modal"); msg.style.display = "none";
     if (!nombre) { msg.textContent="El nombre no puede quedar vacío"; msg.className="fmsg error"; msg.style.display="block"; return; }
     try {
-      const { error } = await supabase.from("empresas_bingo").update({ nit, nombre }).eq("codigo", codigo);
+      const { error } = await supabase.from("empresas_bingo").update({
+        nit, nombre,
+        telefono:  telefono || null,
+        email:     email || null,
+        direccion: direccion || null
+      }).eq("codigo", codigo);
       if (error) throw error;
       msg.textContent = "✅ Cambios guardados"; msg.className="fmsg ok"; msg.style.display="block";
       setTimeout(()=>{ cerrarModal(); cargarEmpresas(); fetchDashboardData(); }, 1000);
