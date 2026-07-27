@@ -148,6 +148,35 @@
   <div id="resultado" class="resultado"></div>
 
   <form id="formulario" style="display:none" onsubmit="return false;">
+    <div class="campo">
+      <label>Nombre o razón social (a quién se entrega) <span>*</span></label>
+      <input type="text" id="receptor_nombre" placeholder="Ej: Totto">
+      <div class="msg-error" id="err-nombre">Requerido</div>
+    </div>
+
+    <div class="fila-doble">
+      <div class="campo">
+        <label>NIT / Identificación <span>*</span></label>
+        <input type="text" id="receptor_nit" placeholder="900123456">
+        <div class="msg-error" id="err-nit">Requerido</div>
+      </div>
+      <div class="campo">
+        <label>Teléfono <span>*</span></label>
+        <input type="text" id="receptor_telefono" placeholder="3001234567">
+        <div class="msg-error" id="err-telefono">Requerido</div>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Email</label>
+      <input type="text" id="receptor_email" placeholder="correo@empresa.com">
+    </div>
+
+    <div class="campo">
+      <label>Dirección</label>
+      <input type="text" id="receptor_direccion" placeholder="Dirección">
+    </div>
+
     <div class="fila-doble">
       <div class="campo">
         <label>Cartón desde <span>*</span></label>
@@ -213,11 +242,12 @@
   cargarEmpresa();
 
   function limpiarErrores() {
-    ["desde","hasta","cantidad"].forEach(f => {
-      document.getElementById("err-"+f).style.display = "none";
-      const campo = f === "desde" ? "carton_desde" : f === "hasta" ? "carton_hasta" : "cantidad_bingos";
-      document.getElementById(campo).classList.remove("error");
+    ["nombre","nit","telefono","desde","hasta","cantidad"].forEach(f => {
+      const el = document.getElementById("err-"+f);
+      if (el) el.style.display = "none";
     });
+    ["receptor_nombre","receptor_nit","receptor_telefono","carton_desde","carton_hasta","cantidad_bingos"]
+      .forEach(id => document.getElementById(id).classList.remove("error"));
   }
 
   function marcarError(campo, elErr, msg) {
@@ -228,12 +258,20 @@
 
   window.registrar = async () => {
     limpiarErrores();
-    const desde = document.getElementById("carton_desde").value;
-    const hasta = document.getElementById("carton_hasta").value;
-    const cantidad = document.getElementById("cantidad_bingos").value;
+    const nombre    = document.getElementById("receptor_nombre").value.trim();
+    const nit       = document.getElementById("receptor_nit").value.trim();
+    const telefono  = document.getElementById("receptor_telefono").value.trim();
+    const email     = document.getElementById("receptor_email").value.trim();
+    const direccion = document.getElementById("receptor_direccion").value.trim();
+    const desde     = document.getElementById("carton_desde").value;
+    const hasta     = document.getElementById("carton_hasta").value;
+    const cantidad  = document.getElementById("cantidad_bingos").value;
     const resultado = document.getElementById("resultado");
 
     let ok = true;
+    if (!nombre)   { marcarError("receptor_nombre","err-nombre","Ingresa el nombre o razón social"); ok = false; }
+    if (!nit)      { marcarError("receptor_nit","err-nit","Ingresa el NIT o identificación"); ok = false; }
+    if (!telefono) { marcarError("receptor_telefono","err-telefono","Ingresa un teléfono"); ok = false; }
     if (!desde || Number(desde) < 1) { marcarError("carton_desde","err-desde","Ingresa un número válido"); ok = false; }
     if (!hasta || Number(hasta) < 1) { marcarError("carton_hasta","err-hasta","Ingresa un número válido"); ok = false; }
     if (ok && Number(hasta) < Number(desde)) { marcarError("carton_hasta","err-hasta","Debe ser mayor o igual a 'desde'"); ok = false; }
@@ -247,10 +285,15 @@
 
     try {
       const { error } = await supabase.from("entregas_bingo").insert({
-        empresa_codigo:  CODIGO,
-        carton_desde:    Number(desde),
-        carton_hasta:    Number(hasta),
-        cantidad_bingos: Number(cantidad)
+        empresa_codigo:      CODIGO,
+        receptor_nombre:     nombre,
+        receptor_nit:        nit,
+        receptor_telefono:   telefono,
+        receptor_email:      email || null,
+        receptor_direccion:  direccion || null,
+        carton_desde:        Number(desde),
+        carton_hasta:        Number(hasta),
+        cantidad_bingos:     Number(cantidad)
       });
       if (error) throw error;
 
@@ -261,7 +304,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
           <h3>Entrega registrada</h3>
-          <p>${NOMBRE_EMPRESA}</p>
+          <p>${NOMBRE_EMPRESA} → ${nombre}</p>
           <div class="resumen">
             <div><span>Cartones</span><b>${desde} – ${hasta}</b></div>
             <div><span>Bingos entregados</span><b>${cantidad}</b></div>
